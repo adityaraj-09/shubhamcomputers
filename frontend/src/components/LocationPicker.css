@@ -1,0 +1,75 @@
+.location-modal {
+  padding-bottom: 32px;
+}
+
+.location-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.location-gps-btn {
+  margin-bottom: 16px;
+}
+
+.location-divider {
+  text-align: center;
+  margin: 8px 0 16px;
+  color: var(--text-muted);
+  font-size: 12px;
+  position: relative;
+}
+
+.location-divider::before,
+.location-divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 40%;
+  height: 1px;
+  background: var(--border);
+}
+
+.location-divider::before { left: 0; }
+.location-divider::after { right: 0; }
+
+.location-divider span {
+  background: var(--bg-card);
+  padding: 0 12px;
+}
+
+.location-search-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.location-search-btn {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+
+.location-search-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.location-error {
+  margin-top: 12px;
+  color: var(--danger);
+  font-size: 13px;
+  text-align: center;
+}

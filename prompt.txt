@@ -1,0 +1,21 @@
+We're making a mobile-only website for a printing store in our city. We aim to serve luxury of getting your documents printed and delivered under 30 mins and we'll have a mart for stationary products too. And this app will be an AI-Powered application.
+
+We'll make the system for website but my mail goal with this MERN-website is to make a running Android+iOS app on it. 
+
+The functionalities will include these features : 
+- Login/Signup/Authentication Mainly through Contact Number/OTP. User will avail the app basically but the Admin will have access to Mart Products/Order/User Details/Add Product/Add Admin/Basically Admin Dashboard. New login gets saved in Users list with all there details - user_id/name/phone_number/role/num_orders/Date-Joined
+
+- When logged in , like blinkit it will ask for the location/may be current location or manually Add location - icon at the top right. And we're serving in jhajjar only - Within a radius of 3km from the Coodinates {28.605441032453836, 76.65319837711422} - Our Store Location. And we tend to deliver our orders under 30 mins.
+
+- There will be a long search bar at the top-left to search our print options/ mart products and this should be as fast as possible.
+
+- A wallet icon at the top right - Which will be our main payment means. Users will be able to top-up their wallet by entering the amount. And then pay option will redirect them to a UPI app where they will pay and get redirected to the app again. This has to be a NO-GLITCH feature. Min amount 50.
+
+- Then starting at the main things , there should be an nx3 grid of all the print options that are typically available. Each of those will have their own functions we'll plan one-by-one. And their payment will be very smooth - by directly deducting from the wallet. User can add customization note too. And this order will show up as a notification to the Admins , and gets recorded in the order - Order_ID/Product(s)/Customer/Amount/Payment/Status/Date
+
+- Below the services will be our Mart (First all categories list) + filters + products (Catalogues details I'll attached later) - These products can be managed by Admin Dashboard/Add Product too. 
+
+- Interface will be very smooth functioning, no code-breaks, Modern Looking font/schemes. 
+- We'll add a floating bubble at bottom-right, which will basically have GPT Endpoint and will act as AI Agent for the users to gather quick information.
+
+- This is the basic structure, we'll in details after this.

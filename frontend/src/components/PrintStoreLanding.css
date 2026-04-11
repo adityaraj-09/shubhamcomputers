@@ -1,0 +1,328 @@
+.print-store-landing {
+  margin-top: 8px;
+  margin-bottom: 16px;
+}
+
+/* ─── Hero Banner ─── */
+.ps-hero {
+  background: linear-gradient(180deg, #FFF8E1 0%, #FFF3C4 100%);
+  border-radius: var(--radius-lg);
+  padding: 28px 20px 20px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.ps-hero-illustration {
+  margin-bottom: 12px;
+}
+
+.ps-hero-emoji {
+  font-size: 56px;
+  display: block;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+}
+
+.ps-hero-docs {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 20px;
+  opacity: 0.7;
+}
+
+.ps-hero-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #1a1a2e;
+  margin-bottom: 4px;
+}
+
+.ps-hero-subtitle {
+  font-size: 13px;
+  color: #5a5a7a;
+  font-weight: 500;
+}
+
+/* ─── Upload CTA ─── */
+.ps-upload-section {
+  background: var(--bg-card);
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px 20px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.ps-upload-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(108, 99, 255, 0.1);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+}
+
+.ps-upload-section h3 {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.ps-upload-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.ps-upload-limits {
+  font-size: 11px;
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+/* ─── Section common ─── */
+.ps-section {
+  margin-bottom: 20px;
+}
+
+.ps-section-title {
+  font-size: 16px;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.ps-section-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+
+/* ─── Feature Cards ─── */
+.ps-features-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.ps-feature-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 14px;
+}
+
+.ps-feature-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.ps-feature-icon.clock {
+  background: rgba(108, 99, 255, 0.12);
+  color: var(--primary);
+}
+
+.ps-feature-icon.shield {
+  background: rgba(0, 217, 166, 0.12);
+  color: var(--accent);
+}
+
+.ps-feature-icon.dollar {
+  background: rgba(255, 183, 77, 0.12);
+  color: #FFB347;
+}
+
+.ps-feature-icon.layers {
+  background: rgba(78, 205, 196, 0.12);
+  color: #4ECDC4;
+}
+
+.ps-feature-card h4 {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.ps-feature-card p {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* ─── How It Works ─── */
+.ps-how-section {
+  background: rgba(108, 99, 255, 0.06);
+  border-radius: var(--radius-lg);
+  padding: 20px 16px;
+}
+
+.ps-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ps-step {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.ps-step:last-child {
+  border-bottom: none;
+}
+
+.ps-step-content h4 {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.ps-step-content p {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.ps-step-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ps-step-icon.visit {
+  background: rgba(108, 99, 255, 0.15);
+  color: var(--primary);
+}
+
+.ps-step-icon.upload {
+  background: rgba(0, 217, 166, 0.15);
+  color: var(--accent);
+}
+
+.ps-step-icon.customize {
+  background: rgba(255, 183, 77, 0.15);
+  color: #FFB347;
+}
+
+.ps-step-icon.checkout {
+  background: rgba(167, 139, 250, 0.15);
+  color: #A78BFA;
+}
+
+/* ─── Customisation Options ─── */
+.ps-custom-section {
+  background: rgba(108, 99, 255, 0.06);
+  border-radius: var(--radius-lg);
+  padding: 20px 16px;
+}
+
+.ps-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ps-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.ps-option:last-child {
+  border-bottom: none;
+}
+
+.ps-option-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: rgba(108, 99, 255, 0.12);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ps-option h4 {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.ps-option p {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ─── Testimonials ─── */
+.ps-testimonials-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px 16px;
+}
+
+.ps-testimonials-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.ps-testimonials-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.ps-testimonial {
+  background: var(--bg-dark);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+
+.ps-testimonial-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.ps-testimonial h4 {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.ps-testimonial p {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}

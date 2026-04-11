@@ -1,0 +1,111 @@
+.search-bar-wrapper {
+  position: relative;
+  flex: 1;
+}
+
+.search-input-container {
+  display: flex;
+  align-items: center;
+  background: var(--bg-input);
+  border-radius: 12px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  transition: border-color 0.2s;
+}
+
+.search-input-container:focus-within {
+  border-color: var(--primary);
+}
+
+.search-icon {
+  color: var(--text-muted);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.search-input {
+  flex: 1;
+  background: none;
+  padding: 12px 10px;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.search-clear {
+  background: none;
+  color: var(--text-muted);
+  font-size: 16px;
+  padding: 4px;
+  display: flex;
+}
+
+.search-results {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  max-height: 60vh;
+  overflow-y: auto;
+  z-index: 50;
+  box-shadow: var(--shadow);
+}
+
+.search-loading, .search-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.search-section-title {
+  padding: 10px 14px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.search-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.search-item:hover {
+  background: var(--bg-surface);
+}
+
+.search-item-icon {
+  font-size: 20px;
+  width: 32px;
+  text-align: center;
+}
+
+.search-item-info {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.search-item-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.search-item-price {
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 600;
+}

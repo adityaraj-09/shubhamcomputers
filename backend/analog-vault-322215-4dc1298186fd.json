@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "analog-vault-322215",
+  "private_key_id": "4dc1298186fdaf27acdf3020db26fe5faa4845ac",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDIerfgSKU2SBOq\nlDN+8Df1qUtsRtqDbfMeR0LykWPVjHkKsRz2VrZuCwyZl5b033n9xPxCPk4ClBtU\n0G9vZU5wP8r5Jt169jVkbZ4ckjw/SdKaiUnFlWTMcQ1Zz15Elps+6msGRTCYvF/Q\nvvFjzidBTezl8bHh9aViHhZKwEMz52u/F19HwsCmbYkNEQ2OISQdN+V7yuYrVtTo\nBQUiwndO61s4TGm5TlAnMRRGpS5CH2KBqmob7eYXuGJZO+Ls2SPRBCAf0zwtRK6o\n09YjfmJ+OJ7/ott0hnZTtN3BzxyGPzbcaoxiaEM6CrI6cXgaF+R/0S01dk4aiy4D\nVpKbcPO1AgMBAAECggEAJqm8Em4QJqLJ4CjKsZ1kPWVT3WLgu14V9+3oVF2Dsmhv\n44b6vetFLX3GBUz92OXMYgt+VswrQUYM61NzWjlgYjd7ToeXSSJ4c5DMYFg3dEEp\nc5IsfwVrth3LZFmgpXuiHwUYdNIdKCeUFu7sIMJeQbLkkAgHtTsplP2WcP4ZN8X/\nPTR083OVhkDF/V8a9hs+kyRpGV6sM7ohI2FE/q/ZtPnik4Sa7OC0SaYOdtIL4149\naZSN51wBW0kipqNEvqDnAJg6euVeJgk/CfQZypMGYbm8kCL3zHbJHRJsElFo1MGg\nt8gThzX96fC4h0eI01n9n5BNFgYbxykeW7VTgxQw9QKBgQDuH3KNL1dk/oeeU52r\nCafYdai8KLJvWp0IpvEMzcKAz3FfhCjG9hM9iXjCS5JLTKCjOUOY6RpX8utTh23T\nZW6MzfkVpnyvmuOCIORrvT9PGwJUkGLmvlVB0sCahV4TeU9NO+GD6y7DV9GCaSrQ\nsqSC9QtCyQY3xiPsVltwyFQqlwKBgQDXh8o1NC2FTY5KM9P+SufVDhbSrdyetYmD\nYzLzxo0cQaBvkrHlc6hDR/l/b1iW0BoqndEQWsp3c9hsDoz0P3VVF8JTJUN9DGgU\nTWA4NvSKASgGiwyClmu/+x675iWAlz9nKGiO85k9xgQRvTj1poxLfmDz6p8AU9vK\nvkPC4eJZkwKBgAPIShiGBPxcsqjIKTv7RkhA7jI270aniNEHXdLXPdyv7twWjFNE\nu1+B3IIxkxxRFkghc7ptEXcOK8DC6PKvrMbdyrQWVeqwKib6AMbZVbUa97mCJaAG\nq/IEt/x8W9cxWRof9mATD0YZEgHhS8XO4KAX5lrkOI4QPqfVY1RySiv3AoGAPDWO\n43YEEW0tBsWbvzolsXsSHSC8tQl5tN6NaVRaLz6WFxUf5T1+D+2XYWY1lUvlQ2p6\n8NqsHNqb5vPZpJHlsTPF8XxDcjd5C9LhwlJ31eWkzM8jW4ex6hu45jzQ1S9rYuIC\n84xRjtQ2Zs45j0ZLgvt3EizE5k6G5Ahq3ZJErUkCgYBN5SDVEMKai58lroU4nFIK\nvE2As7AMIB1F8SEGxJH7fFxxloWIm+VJjSPKARSaRlrCciuqG2gdGtxF9sb+90Ub\nmuVMWIgDILCDXRGwjzlD62lpo8WWIu+cuFRUtvBZA9IRxlPslwT6J3WvYn9g8Lwa\nbPmWjlCj54HbxwCA6v4Kjw==\n-----END PRIVATE KEY-----\n",
+  "client_email": "printing@analog-vault-322215.iam.gserviceaccount.com",
+  "client_id": "105430842261191946137",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/printing%40analog-vault-322215.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
