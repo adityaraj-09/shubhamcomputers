@@ -6,12 +6,14 @@ import {
   StyleSheet,
   ScrollView,
   Image,
+  Linking,
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
+import Pdf from 'react-native-pdf';
 import { useAuth } from '../context/AuthContext';
 import API from '../api/client';
 import { colors, radius } from '../theme/colors';
@@ -70,6 +72,7 @@ export default function PrintOrderConfig({ uploadedFiles, onAddMoreFiles, onBack
   const [editorVisible, setEditorVisible] = useState(false);
   const [editorAsset, setEditorAsset] = useState(null);
   const [previewVisible, setPreviewVisible] = useState(false);
+  const [pdfPageCount, setPdfPageCount] = useState({});
   const scrollRef = useRef(null);
 
   useEffect(() => {
@@ -190,6 +193,18 @@ export default function PrintOrderConfig({ uploadedFiles, onAddMoreFiles, onBack
   const currentFile = uploadedFiles[current];
   const currentIsImage = isImage(currentFile?.name || '');
   const currentIsPdf = isPdf(currentFile?.name || '');
+  const currentPdfUri = currentFile?.viewLink || currentFile?.fileUrl || currentFile?.uri || null;
+
+  const handlePdfLoad = (index, pages) => {
+    if (!pages || pages < 1) return;
+    setPdfPageCount((prev) => {
+      if (prev[index] === pages) return prev;
+      return { ...prev, [index]: pages };
+    });
+    setConfigs((prev) =>
+      prev.map((c, i) => (i === index && c.pages === 1 ? { ...c, pages } : c))
+    );
+  };
 
   return (
     <View style={styles.page}>
@@ -257,6 +272,7 @@ export default function PrintOrderConfig({ uploadedFiles, onAddMoreFiles, onBack
       <ScrollView
         ref={scrollRef}
         horizontal
+        style={styles.sliderScroll}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.slider}
       >
@@ -266,7 +282,7 @@ export default function PrintOrderConfig({ uploadedFiles, onAddMoreFiles, onBack
             style={[styles.slide, i === current && styles.slideActive]}
             onPress={() => setCurrent(i)}
           >
-            {isImage(f.name) && (f.thumbnailLink || f.viewLink) ? (
+            {(isImage(f.name) || isPdf(f.name)) && (f.thumbnailLink || f.viewLink) ? (
               <Image
                 source={{ uri: f.thumbnailLink || f.viewLink }}
                 style={styles.slideImg}
@@ -322,18 +338,36 @@ export default function PrintOrderConfig({ uploadedFiles, onAddMoreFiles, onBack
                   {currentFile?.name}
                 </Text>
               </View>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.pdfPagesRow}
-              >
-                {Array.from({ length: Math.max(1, cfg.pages) }).map((_, idx) => (
-                  <View key={`pdf-page-${idx + 1}`} style={styles.pdfPageCard}>
-                    <Feather name="file-text" size={18} color={colors.primaryLight} />
-                    <Text style={styles.pdfPageText}>Page {idx + 1}</Text>
-                  </View>
-                ))}
-              </ScrollView>
+              {!!currentPdfUri ? (
+                <View style={styles.pdfViewerWrap}>
+                  <Pdf
+                    source={{ uri: currentPdfUri, cache: true }}
+                    style={styles.pdfViewer}
+                    trustAllCerts={false}
+                    onLoadComplete={(numberOfPages) => handlePdfLoad(current, numberOfPages)}
+                    onError={() => {
+                      Toast.show({ type: 'error', text1: 'Could not render PDF preview' });
+                    }}
+                  />
+                </View>
+              ) : (
+                <View style={styles.pdfFallback}>
+                  <Feather name="file-text" size={22} color={colors.primaryLight} />
+                  <Text style={styles.pdfPageText}>PDF preview not available for this file</Text>
+                </View>
+              )}
+              <Text style={styles.pdfHint}>
+                {pdfPageCount[current] ? `${pdfPageCount[current]} page(s) detected` : 'Loading pages...'}
+              </Text>
+              {!!(currentFile?.viewLink || currentFile?.fileUrl) && (
+                <TouchableOpacity
+                  style={styles.openPdfBtn}
+                  onPress={() => Linking.openURL(currentFile.viewLink || currentFile.fileUrl)}
+                >
+                  <Feather name="external-link" size={14} color={colors.primaryLight} />
+                  <Text style={styles.openPdfBtnText}>Open full PDF</Text>
+                </TouchableOpacity>
+              )}
             </View>
           ) : (
             <View style={styles.genericPreviewWrap}>
@@ -347,33 +381,39 @@ export default function PrintOrderConfig({ uploadedFiles, onAddMoreFiles, onBack
 
         <Text style={styles.secTitle}>All files and pages</Text>
         <View style={styles.fileList}>
-          {uploadedFiles.map((f, idx) => {
-            const fileCfg = configs[idx] || defaultConfig();
-            const active = idx === current;
-            return (
-              <TouchableOpacity
-                key={`${f.id || idx}-meta`}
-                style={[styles.fileRow, active && styles.fileRowActive]}
-                onPress={() => setCurrent(idx)}
-              >
-                <FileTypeIcon fileName={f.name} size={18} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.fileRowName} numberOfLines={1}>
-                    {f.name}
-                  </Text>
-                  <Text style={styles.fileRowMeta}>
-                    {fileCfg.pages} page{fileCfg.pages !== 1 ? 's' : ''} · {fileCfg.copies} cop
-                    {fileCfg.copies !== 1 ? 'ies' : 'y'}
-                  </Text>
-                </View>
-                <Feather
-                  name={active ? 'check-circle' : 'chevron-right'}
-                  size={16}
-                  color={active ? colors.accent : colors.textMuted}
-                />
-              </TouchableOpacity>
-            );
-          })}
+          <ScrollView
+            style={styles.fileListScroll}
+            nestedScrollEnabled
+            showsVerticalScrollIndicator={true}
+          >
+            {uploadedFiles.map((f, idx) => {
+              const fileCfg = configs[idx] || defaultConfig();
+              const active = idx === current;
+              return (
+                <TouchableOpacity
+                  key={`${f.id || idx}-meta`}
+                  style={[styles.fileRow, active && styles.fileRowActive]}
+                  onPress={() => setCurrent(idx)}
+                >
+                  <FileTypeIcon fileName={f.name} size={18} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.fileRowName} numberOfLines={1}>
+                      {f.name}
+                    </Text>
+                    <Text style={styles.fileRowMeta}>
+                      {fileCfg.pages} page{fileCfg.pages !== 1 ? 's' : ''} · {fileCfg.copies} cop
+                      {fileCfg.copies !== 1 ? 'ies' : 'y'}
+                    </Text>
+                  </View>
+                  <Feather
+                    name={active ? 'check-circle' : 'chevron-right'}
+                    size={16}
+                    color={active ? colors.accent : colors.textMuted}
+                  />
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
 
         <View style={styles.rowBetween}>
@@ -628,21 +668,22 @@ const styles = StyleSheet.create({
   addFiles: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   addFilesText: { color: colors.primary, fontWeight: '600', fontSize: 13 },
   addRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  sliderScroll: { flexGrow: 0 },
   slider: { paddingHorizontal: 12, paddingVertical: 12, gap: 10 },
   slide: {
-    width: 88,
-    height: 88,
+    width: 62,
+    height: 62,
     borderRadius: radius.md,
     overflow: 'hidden',
     borderWidth: 2,
     borderColor: 'transparent',
-    marginRight: 10,
+    marginRight: 8,
     backgroundColor: colors.bgCard,
   },
   slideActive: { borderColor: colors.primary },
   slideImg: { width: '100%', height: '100%' },
   slideIcon: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  ext: { fontSize: 10, color: colors.textMuted, marginTop: 4 },
+  ext: { fontSize: 9, color: colors.textMuted, marginTop: 2 },
   counter: {
     textAlign: 'center',
     color: colors.textMuted,
@@ -670,19 +711,43 @@ const styles = StyleSheet.create({
   },
   pdfHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   pdfTitle: { flex: 1, color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
-  pdfPagesRow: { gap: 8, paddingVertical: 2 },
-  pdfPageCard: {
-    width: 92,
-    height: 110,
+  pdfViewerWrap: {
+    width: '100%',
+    height: 320,
+    borderRadius: 10,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.bgSurface,
+  },
+  pdfViewer: { flex: 1, width: '100%', height: '100%', backgroundColor: colors.bgSurface },
+  pdfFallback: {
+    minHeight: 120,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.bgSurface,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    paddingHorizontal: 14,
+    gap: 8,
   },
   pdfPageText: { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
+  pdfHint: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
+  openPdfBtn: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: colors.primary + '22',
+    borderWidth: 1,
+    borderColor: colors.primary + '44',
+  },
+  openPdfBtnText: { fontSize: 12, color: colors.primaryLight, fontWeight: '700' },
   genericPreviewWrap: {
     minHeight: 220,
     alignItems: 'center',
@@ -700,6 +765,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     overflow: 'hidden',
   },
+  fileListScroll: { maxHeight: 260 },
   fileRow: {
     flexDirection: 'row',
     alignItems: 'center',
