@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Linking,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -33,6 +34,13 @@ const timeAgo = (iso) => {
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h ago`;
   return `${Math.floor(h / 24)}d ago`;
+};
+
+const isImageFile = (item) => {
+  const url = String(item?.fileUrl || '').toLowerCase();
+  const mime = String(item?.options?.mimeType || '').toLowerCase();
+  if (mime.startsWith('image/')) return true;
+  return /\.(png|jpe?g|webp|gif|bmp|heic|heif)(\?|$)/i.test(url);
 };
 
 export default function ManageOrdersScreen() {
@@ -187,6 +195,25 @@ export default function ManageOrdersScreen() {
                       <Text style={styles.itemBadge}>{item.type?.toUpperCase()}</Text>
                       <Text style={styles.itemName}>{item.name}</Text>
                       <Text style={styles.itemPrice}>₹{item.price}</Text>
+                      {!!item.fileUrl && (
+                        <View style={styles.fileWrap}>
+                          {isImageFile(item) ? (
+                            <Image source={{ uri: item.fileUrl }} style={styles.filePreview} />
+                          ) : (
+                            <View style={styles.fileFallback}>
+                              <Feather name="file-text" size={16} color={colors.primaryLight} />
+                              <Text style={styles.fileFallbackText}>Uploaded file available</Text>
+                            </View>
+                          )}
+                          <TouchableOpacity
+                            style={styles.fileBtn}
+                            onPress={() => Linking.openURL(item.fileUrl)}
+                          >
+                            <Feather name="external-link" size={14} color={colors.primaryLight} />
+                            <Text style={styles.fileBtnText}>View uploaded file</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
                     </View>
                   ))}
 
@@ -230,12 +257,14 @@ const styles = StyleSheet.create({
   filterBar: { paddingHorizontal: spacing.page, paddingBottom: 8, gap: 8 },
   chip: {
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 10,
+    minHeight: 40,
     borderRadius: 20,
     backgroundColor: colors.bgSurface,
     borderWidth: 1,
     borderColor: colors.border,
     marginRight: 8,
+    justifyContent: 'center',
   },
   chipOn: { borderColor: colors.primary, backgroundColor: colors.primary + '22' },
   chipT: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, textTransform: 'capitalize' },
@@ -285,6 +314,40 @@ const styles = StyleSheet.create({
   itemBadge: { fontSize: 10, fontWeight: '800', color: colors.primaryLight },
   itemName: { fontSize: 14, color: colors.textPrimary, marginTop: 4 },
   itemPrice: { fontSize: 13, color: colors.accent, marginTop: 4, fontWeight: '700' },
+  fileWrap: { marginTop: 10, gap: 8 },
+  filePreview: {
+    width: '100%',
+    height: 150,
+    borderRadius: 8,
+    backgroundColor: colors.bgInput,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  fileFallback: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: colors.bgInput,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  fileFallbackText: { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
+  fileBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: colors.primary + '22',
+    borderWidth: 1,
+    borderColor: colors.primary + '44',
+  },
+  fileBtnText: { fontSize: 12, color: colors.primaryLight, fontWeight: '700' },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 12 },
   cancelBtn: {
     paddingHorizontal: 14,

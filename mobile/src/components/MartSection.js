@@ -152,7 +152,7 @@ export default function MartSection({ categories }) {
 }
 
 const styles = StyleSheet.create({
-  section: { marginTop: 24 },
+  section: { marginTop: 24, paddingHorizontal: 16 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 },
   titleIconWrap: {
     width: 44,
@@ -191,17 +191,16 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
     justifyContent: 'space-between',
   },
   card: {
-    width: '23.5%',
+    width: '24%',
     backgroundColor: colors.bgCard,
     borderRadius: radius.sm,
     padding: 6,
     borderWidth: 1,
     borderColor: colors.border,
-    marginBottom: 4,
+    marginBottom: 8,
   },
   imgWrap: {
     aspectRatio: 1,

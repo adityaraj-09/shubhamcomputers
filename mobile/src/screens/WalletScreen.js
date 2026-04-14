@@ -8,17 +8,24 @@ import {
   TextInput,
   Modal,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { LinearGradient } from 'expo-linear-gradient';
-import RazorpayCheckout from 'react-native-razorpay';
 import { useAuth } from '../context/AuthContext';
 import API from '../api/client';
 import { formatPrice, formatDateTime, MIN_WALLET_TOPUP, MAX_WALLET_TOPUP } from '../utils/constants';
 import { colors, radius, spacing } from '../theme/colors';
+
+let RazorpayCheckout = null;
+try {
+  RazorpayCheckout = require('react-native-razorpay').default;
+} catch {
+  RazorpayCheckout = null;
+}
 
 export default function WalletScreen() {
   const insets = useSafeAreaInsets();
@@ -67,28 +74,50 @@ export default function WalletScreen() {
     try {
       const { data } = await API.post('/wallet/topup', { amount });
 
-      const options = {
-        key: data.keyId,
-        order_id: data.razorpayOrderId,
-        amount: data.amountPaise,
-        currency: data.currency || 'INR',
-        name: data.merchantName || 'Shubham Prints',
-        description: `Wallet Top-up ${data.txnRef}`,
-        prefill: {
-          name: user?.name || '',
-          contact: user?.phone || '',
-        },
-        theme: { color: colors.primary },
-      };
+      let confirmPayload = { transactionId: data.transactionId };
 
-      const paymentResult = await RazorpayCheckout.open(options);
+      if (data.keyId && data.razorpayOrderId && RazorpayCheckout) {
+        const options = {
+          key: data.keyId,
+          order_id: data.razorpayOrderId,
+          amount: data.amountPaise,
+          currency: data.currency || 'INR',
+          name: data.merchantName || 'Shubham Prints',
+          description: `Wallet Top-up ${data.txnRef}`,
+          prefill: {
+            name: user?.name || '',
+            contact: user?.phone || '',
+          },
+          theme: { color: colors.primary },
+        };
 
-      const confirmRes = await API.post('/wallet/topup/confirm', {
-        transactionId: data.transactionId,
-        razorpay_order_id: paymentResult.razorpay_order_id,
-        razorpay_payment_id: paymentResult.razorpay_payment_id,
-        razorpay_signature: paymentResult.razorpay_signature,
-      });
+        const paymentResult = await RazorpayCheckout.open(options);
+        confirmPayload = {
+          transactionId: data.transactionId,
+          razorpay_order_id: paymentResult.razorpay_order_id,
+          razorpay_payment_id: paymentResult.razorpay_payment_id,
+          razorpay_signature: paymentResult.razorpay_signature,
+        };
+      } else {
+        const link =
+          data.intents?.gpay ||
+          data.intents?.generic ||
+          data.upiLink;
+
+        if (!link) {
+          throw new Error('No payment method available.');
+        }
+
+        const supported = await Linking.canOpenURL(link);
+        if (!supported) {
+          throw new Error('No UPI app found on this device.');
+        }
+
+        await Linking.openURL(link);
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
+
+      const confirmRes = await API.post('/wallet/topup/confirm', confirmPayload);
 
       updateUser({ walletBalance: confirmRes.data.balance });
       Toast.show({

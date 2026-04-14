@@ -91,14 +91,25 @@ export default function AddProductScreen() {
         contentContainerStyle={{ padding: spacing.page, paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
       >
-        <Field label="Product Name *" value={form.name} onChangeText={(t) => handleChange('name', t)} />
+        <Field
+          label="Product Name *"
+          value={form.name}
+          onChangeText={(t) => handleChange('name', t)}
+          placeholder="e.g. Classmate Notebook"
+        />
         <Field
           label="Description"
           value={form.description}
           onChangeText={(t) => handleChange('description', t)}
+          placeholder="Product description..."
           multiline
         />
         <Text style={styles.label}>Category</Text>
+        <Text style={styles.helperText}>
+          {form.category
+            ? categories.find((c) => c._id === form.category)?.name || 'Selected'
+            : 'Select category'}
+        </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chips}>
           <TouchableOpacity
             style={[styles.chip, !form.category && styles.chipOn]}
@@ -122,6 +133,7 @@ export default function AddProductScreen() {
               label="Price (₹) *"
               value={form.price}
               onChangeText={(t) => handleChange('price', t)}
+              placeholder="0"
               keyboardType="decimal-pad"
             />
           </View>
@@ -130,6 +142,7 @@ export default function AddProductScreen() {
               label="MRP (₹)"
               value={form.mrp}
               onChangeText={(t) => handleChange('mrp', t)}
+              placeholder="0"
               keyboardType="decimal-pad"
             />
           </View>
@@ -140,11 +153,15 @@ export default function AddProductScreen() {
               label="Stock *"
               value={form.stock}
               onChangeText={(t) => handleChange('stock', t)}
+              placeholder="0"
               keyboardType="number-pad"
             />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.label}>Unit</Text>
+            <Text style={styles.helperText}>
+              {form.unit ? form.unit.charAt(0).toUpperCase() + form.unit.slice(1) : 'Select unit'}
+            </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {UNITS.map((u) => (
                 <TouchableOpacity
@@ -164,12 +181,19 @@ export default function AddProductScreen() {
           label="Image URL"
           value={form.image}
           onChangeText={(t) => handleChange('image', t)}
+          placeholder="https://..."
         />
-        <Field label="Brand" value={form.brand} onChangeText={(t) => handleChange('brand', t)} />
+        <Field
+          label="Brand"
+          value={form.brand}
+          onChangeText={(t) => handleChange('brand', t)}
+          placeholder="e.g. Classmate"
+        />
         <Field
           label="Tags (comma separated)"
           value={form.tags}
           onChangeText={(t) => handleChange('tags', t)}
+          placeholder="notebook, writing, school"
         />
         <TouchableOpacity
           style={styles.toggle}
@@ -193,7 +217,7 @@ export default function AddProductScreen() {
   );
 }
 
-function Field({ label, value, onChangeText, multiline, keyboardType }) {
+function Field({ label, value, onChangeText, multiline, keyboardType, placeholder }) {
   return (
     <View style={{ marginBottom: 14 }}>
       <Text style={styles.label}>{label}</Text>
@@ -201,6 +225,7 @@ function Field({ label, value, onChangeText, multiline, keyboardType }) {
         style={[styles.input, multiline && { minHeight: 80, textAlignVertical: 'top' }]}
         value={value}
         onChangeText={onChangeText}
+        placeholder={placeholder}
         placeholderTextColor={colors.textMuted}
         multiline={multiline}
         keyboardType={keyboardType}
@@ -219,6 +244,17 @@ const styles = StyleSheet.create({
   },
   topTitle: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '800', color: colors.textPrimary },
   label: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 6 },
+  helperText: {
+    fontSize: 15,
+    color: colors.textMuted,
+    marginBottom: 8,
+    backgroundColor: colors.bgInput,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
   input: {
     backgroundColor: colors.bgInput,
     borderRadius: radius.sm,

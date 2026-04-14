@@ -17,11 +17,13 @@ import API from '../api/client';
 import { colors, radius } from '../theme/colors';
 import { href } from '../utils/routes';
 import FileTypeIcon from './FileTypeIcon';
+import ImageEditModal from './ImageEditModal';
 
 const COLOR_PRICE = { bw: 3, colour: 10 };
 
 const isImage = (name = '') =>
   ['jpg', 'jpeg', 'png', 'webp'].includes(name.split('.').pop().toLowerCase());
+const isPdf = (name = '') => name.split('.').pop()?.toLowerCase() === 'pdf';
 
 const defaultConfig = () => ({
   copies: 1,
@@ -64,6 +66,8 @@ export default function PrintOrderConfig({ uploadedFiles, onAddMoreFiles, onBack
   const { addToCart } = useAuth();
   const [current, setCurrent] = useState(0);
   const [configs, setConfigs] = useState(() => uploadedFiles.map(() => defaultConfig()));
+  const [editorVisible, setEditorVisible] = useState(false);
+  const [editorAsset, setEditorAsset] = useState(null);
   const scrollRef = useRef(null);
 
   useEffect(() => {
@@ -142,12 +146,18 @@ export default function PrintOrderConfig({ uploadedFiles, onAddMoreFiles, onBack
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsMultipleSelection: true,
+        allowsMultipleSelection: false,
         quality: 0.9,
       });
       if (result.canceled) return;
-      const files = (result.assets || []).map(toFileMeta);
-      if (files.length) onAddMoreFiles?.(files);
+      const first = result.assets?.[0];
+      if (!first) return;
+      setEditorAsset({
+        ...toFileMeta(first),
+        width: first.width,
+        height: first.height,
+      });
+      setEditorVisible(true);
     } catch {
       Toast.show({ type: 'error', text1: 'Could not add gallery images' });
     }
@@ -175,9 +185,35 @@ export default function PrintOrderConfig({ uploadedFiles, onAddMoreFiles, onBack
   };
 
   const cfg = configs[current] || defaultConfig();
+  const currentFile = uploadedFiles[current];
+  const currentIsImage = isImage(currentFile?.name || '');
+  const currentIsPdf = isPdf(currentFile?.name || '');
 
   return (
     <View style={styles.page}>
+      <ImageEditModal
+        visible={editorVisible}
+        asset={editorAsset}
+        onCancel={() => {
+          setEditorVisible(false);
+          setEditorAsset(null);
+        }}
+        onDone={(edited) => {
+          setEditorVisible(false);
+          setEditorAsset(null);
+          onAddMoreFiles?.([
+            {
+              uri: edited.uri,
+              name: edited.name || 'image.jpg',
+              size: edited.size || 0,
+              mimeType: edited.mimeType || 'image/jpeg',
+            },
+          ]);
+          if (edited.isBlackWhite) {
+            updateConfig('color', 'bw');
+          }
+        }}
+      />
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} hitSlop={12}>
           <Feather name="arrow-left" size={22} color={colors.textPrimary} />
@@ -226,6 +262,45 @@ export default function PrintOrderConfig({ uploadedFiles, onAddMoreFiles, onBack
       </Text>
 
       <ScrollView style={styles.config} contentContainerStyle={{ paddingBottom: 120 }}>
+        <Text style={styles.secTitle}>Selected file preview</Text>
+        <View style={styles.previewCard}>
+          {currentIsImage && (currentFile?.viewLink || currentFile?.thumbnailLink) ? (
+            <Image
+              source={{ uri: currentFile.viewLink || currentFile.thumbnailLink }}
+              style={styles.previewImage}
+              resizeMode="contain"
+            />
+          ) : currentIsPdf ? (
+            <View style={styles.pdfPreviewWrap}>
+              <View style={styles.pdfHeader}>
+                <FileTypeIcon fileName={currentFile?.name || 'file.pdf'} size={24} />
+                <Text style={styles.pdfTitle} numberOfLines={1}>
+                  {currentFile?.name}
+                </Text>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.pdfPagesRow}
+              >
+                {Array.from({ length: Math.max(1, cfg.pages) }).map((_, idx) => (
+                  <View key={`pdf-page-${idx + 1}`} style={styles.pdfPageCard}>
+                    <Feather name="file-text" size={18} color={colors.primaryLight} />
+                    <Text style={styles.pdfPageText}>Page {idx + 1}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          ) : (
+            <View style={styles.genericPreviewWrap}>
+              <FileTypeIcon fileName={currentFile?.name || 'file'} size={34} />
+              <Text style={styles.genericPreviewName} numberOfLines={2}>
+                {currentFile?.name || 'Selected file'}
+              </Text>
+            </View>
+          )}
+        </View>
+
         <Text style={styles.secTitle}>All files and pages</Text>
         <View style={styles.fileList}>
           {uploadedFiles.map((f, idx) => {
@@ -531,6 +606,48 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   config: { flex: 1, paddingHorizontal: 16 },
+  previewCard: {
+    marginTop: 10,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.bgCard,
+    minHeight: 220,
+    overflow: 'hidden',
+  },
+  previewImage: {
+    width: '100%',
+    height: 220,
+    backgroundColor: colors.bgSurface,
+  },
+  pdfPreviewWrap: {
+    padding: 12,
+    gap: 10,
+  },
+  pdfHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  pdfTitle: { flex: 1, color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
+  pdfPagesRow: { gap: 8, paddingVertical: 2 },
+  pdfPageCard: {
+    width: 92,
+    height: 110,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.bgSurface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  pdfPageText: { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
+  genericPreviewWrap: {
+    minHeight: 220,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    gap: 10,
+    backgroundColor: colors.bgSurface,
+  },
+  genericPreviewName: { color: colors.textPrimary, fontSize: 13, fontWeight: '600', textAlign: 'center' },
   fileList: {
     marginTop: 10,
     backgroundColor: colors.bgCard,

@@ -20,6 +20,7 @@ import API, { getApiOrigin } from '../api/client';
 import { colors, radius, spacing } from '../theme/colors';
 import { href } from '../utils/routes';
 import FileTypeIcon from '../components/FileTypeIcon';
+import ImageEditModal from '../components/ImageEditModal';
 
 const SIZES = [
   { id: 'std', label: 'Standard Passport', dims: '35 × 45 mm', badge: 'Most Popular' },
@@ -44,16 +45,49 @@ const PACKS = [
   { id: 'pack24', label: '24 Photos', price: 100 },
 ];
 
+const hsvToHex = (h, s, v) => {
+  const c = v * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = v - c;
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  if (h < 60) [r, g, b] = [c, x, 0];
+  else if (h < 120) [r, g, b] = [x, c, 0];
+  else if (h < 180) [r, g, b] = [0, c, x];
+  else if (h < 240) [r, g, b] = [0, x, c];
+  else if (h < 300) [r, g, b] = [x, 0, c];
+  else [r, g, b] = [c, 0, x];
+  const toHex = (n) => Math.round((n + m) * 255).toString(16).padStart(2, '0');
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+};
+
+const CUSTOM_PALETTE = (() => {
+  const shades = [0.95, 0.8, 0.65];
+  const colorsList = [];
+  for (let h = 0; h < 360; h += 30) {
+    shades.forEach((v) => {
+      colorsList.push(hsvToHex(h, 0.75, v));
+    });
+  }
+  colorsList.push('#ffffff', '#f5f5f5', '#d9d9d9', '#111111');
+  return colorsList;
+})();
+
 export default function PassportPhotosScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { addToCart } = useAuth();
   const [selectedSize, setSelectedSize] = useState('std');
   const [selectedBg, setSelectedBg] = useState('white');
+  const [customBgColor, setCustomBgColor] = useState('#ffffff');
   const [selectedPack, setSelectedPack] = useState('pack8');
   const [uploadedPhoto, setUploadedPhoto] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [heroErr, setHeroErr] = useState(false);
+  const [editorVisible, setEditorVisible] = useState(false);
+  const [editorAsset, setEditorAsset] = useState(null);
+  const [photoBw, setPhotoBw] = useState(false);
   const origin = getApiOrigin();
 
   const uploadAsset = async (asset, fallbackName = 'file') => {
@@ -99,7 +133,11 @@ export default function PassportPhotosScreen() {
       Toast.show({ type: 'error', text1: 'File must be under 10 MB' });
       return;
     }
-    await uploadAsset(asset, 'photo.jpg');
+    setEditorAsset({
+      ...asset,
+      name: asset.fileName || asset.name || 'photo.jpg',
+    });
+    setEditorVisible(true);
   };
 
   const pickFromFiles = async () => {
@@ -117,6 +155,7 @@ export default function PassportPhotosScreen() {
         return;
       }
       await uploadAsset(asset, asset.name || 'passport-file');
+      setPhotoBw(false);
     } catch {
       Toast.show({ type: 'error', text1: 'Could not pick file' });
     }
@@ -129,7 +168,9 @@ export default function PassportPhotosScreen() {
   const totalPhotos = packNum;
 
   const handleAddToCart = () => {
-    const bg = BACKGROUNDS.find((b) => b.id === selectedBg);
+    const bg = selectedBg === 'custom'
+      ? { label: `Custom (${customBgColor.toUpperCase()})`, color: customBgColor }
+      : BACKGROUNDS.find((b) => b.id === selectedBg);
     const totalPhotoCount = packNum;
     addToCart({
       id: `passport-${Date.now()}`,
@@ -145,6 +186,7 @@ export default function PassportPhotosScreen() {
         passportDims: size.dims,
         passportBg: bg.label,
         totalPhotos: totalPhotoCount,
+        passportTone: photoBw ? 'Black & White' : 'Colour',
       },
       mrp: null,
     });
@@ -154,6 +196,28 @@ export default function PassportPhotosScreen() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
+      <ImageEditModal
+        visible={editorVisible}
+        asset={editorAsset}
+        onCancel={() => {
+          setEditorVisible(false);
+          setEditorAsset(null);
+        }}
+        onDone={async (edited) => {
+          setEditorVisible(false);
+          setEditorAsset(null);
+          setPhotoBw(Boolean(edited?.isBlackWhite));
+          await uploadAsset(
+            {
+              uri: edited.uri,
+              name: edited.name || 'photo.jpg',
+              fileName: edited.name || 'photo.jpg',
+              mimeType: edited.mimeType || 'image/jpeg',
+            },
+            edited.name || 'photo.jpg'
+          );
+        }}
+      />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Feather name="arrow-left" size={22} color={colors.textPrimary} />
@@ -207,8 +271,14 @@ export default function PassportPhotosScreen() {
                   <Feather name="check-circle" size={14} color={colors.accent} style={{ marginRight: 6 }} />
                   <Text style={styles.upOk}>Ready to print</Text>
                 </View>
+                {photoBw && <Text style={styles.bwTag}>B/W preference selected</Text>}
               </View>
-              <TouchableOpacity onPress={() => setUploadedPhoto(null)}>
+              <TouchableOpacity
+                onPress={() => {
+                  setUploadedPhoto(null);
+                  setPhotoBw(false);
+                }}
+              >
                 <Feather name="x" size={22} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
@@ -277,7 +347,37 @@ export default function PassportPhotosScreen() {
               <Text style={styles.bgLabel}>{bg.label}</Text>
             </TouchableOpacity>
           ))}
+          <TouchableOpacity
+            style={[styles.bgBtn, selectedBg === 'custom' && styles.bgBtnOn]}
+            onPress={() => setSelectedBg('custom')}
+          >
+            <View style={[styles.swatch, { backgroundColor: customBgColor }]} />
+            <Text style={styles.bgLabel}>Custom</Text>
+          </TouchableOpacity>
         </View>
+        {selectedBg === 'custom' && (
+          <View style={styles.customColorWrap}>
+            <Text style={styles.customColorLabel}>Pick any color</Text>
+            <View style={styles.customRow}>
+              <View style={[styles.customPreview, { backgroundColor: customBgColor }]} />
+              <Text style={styles.customColorValue}>{customBgColor.toUpperCase()}</Text>
+            </View>
+            <View style={styles.paletteGrid}>
+              {CUSTOM_PALETTE.map((hex) => (
+                <TouchableOpacity
+                  key={hex}
+                  style={[
+                    styles.paletteSwatch,
+                    { backgroundColor: hex },
+                    customBgColor.toLowerCase() === hex.toLowerCase() && styles.paletteSwatchOn,
+                  ]}
+                  onPress={() => setCustomBgColor(hex)}
+                />
+              ))}
+            </View>
+            <Text style={styles.customHint}>Tap a swatch to select custom background color.</Text>
+          </View>
+        )}
 
       </ScrollView>
 
@@ -355,6 +455,7 @@ const styles = StyleSheet.create({
   upName: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
   upOkRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
   upOk: { fontSize: 12, color: colors.accent, fontWeight: '600' },
+  bwTag: { fontSize: 11, color: colors.primaryLight, marginTop: 4, fontWeight: '600' },
   uploadBtn: {
     marginHorizontal: spacing.page,
     marginTop: 12,
@@ -441,6 +542,39 @@ const styles = StyleSheet.create({
   bgBtnOn: { borderColor: colors.primary },
   swatch: { width: 36, height: 36, borderRadius: 18, marginBottom: 6, borderWidth: 1, borderColor: colors.border },
   bgLabel: { fontSize: 11, color: colors.textSecondary, textAlign: 'center' },
+  customColorWrap: {
+    marginTop: 12,
+    marginHorizontal: spacing.page,
+    padding: 12,
+    borderRadius: radius.sm,
+    backgroundColor: colors.bgCard,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  customColorLabel: { fontSize: 13, color: colors.textSecondary, marginBottom: 8, fontWeight: '600' },
+  customRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  customPreview: {
+    width: 42,
+    height: 42,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: '#fff',
+  },
+  customColorValue: { color: colors.textPrimary, fontWeight: '700', fontSize: 14 },
+  paletteGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  paletteSwatch: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  paletteSwatchOn: {
+    borderColor: colors.primary,
+    borderWidth: 2,
+  },
+  customHint: { marginTop: 8, color: colors.textMuted, fontSize: 11 },
   bottom: {
     position: 'absolute',
     left: 0,

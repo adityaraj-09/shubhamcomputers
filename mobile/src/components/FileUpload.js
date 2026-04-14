@@ -14,6 +14,7 @@ import Toast from 'react-native-toast-message';
 import API from '../api/client';
 import { colors, radius } from '../theme/colors';
 import FileTypeIcon from './FileTypeIcon';
+import ImageEditModal from './ImageEditModal';
 
 const MAX_FILES = 15;
 const MAX_SIZE_MB = 50;
@@ -48,6 +49,8 @@ export default function FileUpload({ onFilesUploaded }) {
   const [pending, setPending] = useState([]);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [editorVisible, setEditorVisible] = useState(false);
+  const [editorAsset, setEditorAsset] = useState(null);
 
   const appendPickedFiles = (selected) => {
     const totalCount = pending.length + uploadedFiles.length + selected.length;
@@ -96,11 +99,18 @@ export default function FileUpload({ onFilesUploaded }) {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsMultipleSelection: true,
+        allowsMultipleSelection: false,
         quality: 0.9,
       });
       if (result.canceled) return;
-      appendPickedFiles((result.assets || []).map(toFileMeta));
+      const first = result.assets?.[0];
+      if (!first) return;
+      setEditorAsset({
+        ...toFileMeta(first),
+        width: first.width,
+        height: first.height,
+      });
+      setEditorVisible(true);
     } catch {
       Toast.show({ type: 'error', text1: 'Could not pick images' });
     }
@@ -150,6 +160,29 @@ export default function FileUpload({ onFilesUploaded }) {
 
   return (
     <View style={styles.wrap}>
+      <ImageEditModal
+        visible={editorVisible}
+        asset={editorAsset}
+        onCancel={() => {
+          setEditorVisible(false);
+          setEditorAsset(null);
+        }}
+        onDone={(edited) => {
+          setEditorVisible(false);
+          setEditorAsset(null);
+          appendPickedFiles([
+            {
+              uri: edited.uri,
+              name: edited.name || 'image.jpg',
+              size: edited.size || 0,
+              mimeType: edited.mimeType || 'image/jpeg',
+            },
+          ]);
+          if (edited.isBlackWhite) {
+            Toast.show({ type: 'info', text1: 'B/W preference noted for this image' });
+          }
+        }}
+      />
       <View style={styles.dropzone}>
         <Feather name="upload-cloud" size={40} color={colors.primary} />
         <Text style={styles.dzTitle}>Upload your files</Text>

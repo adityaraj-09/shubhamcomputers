@@ -41,7 +41,7 @@ export default function ProductDetailScreen() {
         setLoading(false);
       }
     })();
-  }, [id, navigation]);
+  }, [id, router]);
 
   const handleAdd = () => {
     for (let i = 0; i < qty; i++) {

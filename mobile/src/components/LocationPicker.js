@@ -50,25 +50,40 @@ async function searchAddressSuggestions(query) {
   const q = query.trim();
   if (q.length < 3) return [];
   try {
-    const encoded = encodeURIComponent(`${q}, Jhajjar, Haryana, India`);
-    const url =
-      `https://nominatim.openstreetmap.org/search?q=${encoded}` +
-      '&format=json&addressdetails=1&limit=6&countrycodes=in&namedetails=1';
-    const res = await fetch(url, {
-      headers: {
-        'Accept-Language': 'en',
-        'User-Agent': 'ShubhamPrints/1.0 (garg80912@gmail.com)',
-      },
-    });
-    const data = await res.json();
-    if (!Array.isArray(data)) return [];
-    return data.map((item) => ({
-      id: item.place_id?.toString() || `${item.lat}-${item.lon}`,
-      label: item.display_name,
-      full: item.display_name,
-      lat: parseFloat(item.lat),
-      lng: parseFloat(item.lon),
-    }));
+    const makeUrl = (searchText) => {
+      const encoded = encodeURIComponent(searchText);
+      return (
+        `https://nominatim.openstreetmap.org/search?q=${encoded}` +
+        '&format=jsonv2&addressdetails=1&limit=8&countrycodes=in&namedetails=1' +
+        '&email=garg80912@gmail.com'
+      );
+    };
+
+    const parseList = (data) => {
+      if (!Array.isArray(data)) return [];
+      return data
+        .filter((item) => item?.lat && item?.lon && item?.display_name)
+        .map((item) => ({
+          id: item.place_id?.toString() || `${item.lat}-${item.lon}`,
+          label: item.display_name,
+          full: item.display_name,
+          lat: parseFloat(item.lat),
+          lng: parseFloat(item.lon),
+        }));
+    };
+
+    const headers = { 'Accept-Language': 'en' };
+
+    // First try with city context for better local relevance.
+    const localRes = await fetch(makeUrl(`${q}, Jhajjar, Haryana, India`), { headers });
+    const localData = await localRes.json();
+    const localList = parseList(localData);
+    if (localList.length > 0) return localList;
+
+    // Fallback to generic India-wide search.
+    const globalRes = await fetch(makeUrl(`${q}, India`), { headers });
+    const globalData = await globalRes.json();
+    return parseList(globalData);
   } catch {
     return [];
   }
@@ -104,6 +119,24 @@ export default function LocationPicker({ visible, onClose }) {
       setSuggestions(list);
       setLoadingSuggestions(false);
     }, 350);
+  };
+
+  const handleSearchSuggestions = async () => {
+    const query = address.trim();
+    setError('');
+    if (query.length < 3) {
+      setSuggestions([]);
+      setError('Type at least 3 characters to search');
+      return;
+    }
+    if (suggestionsTimerRef.current) clearTimeout(suggestionsTimerRef.current);
+    setLoadingSuggestions(true);
+    const list = await searchAddressSuggestions(query);
+    setSuggestions(list);
+    setLoadingSuggestions(false);
+    if (list.length === 0) {
+      setError('No address suggestions found');
+    }
   };
 
   const saveAddress = async ({ label, full, lat, lng }) => {
@@ -242,10 +275,10 @@ export default function LocationPicker({ visible, onClose }) {
               />
               <TouchableOpacity
                 style={styles.searchIconBtn}
-                onPress={handleManualAddress}
-                disabled={loading}
+                onPress={handleSearchSuggestions}
+                disabled={loading || loadingSuggestions}
               >
-                {searching ? (
+                {loadingSuggestions ? (
                   <ActivityIndicator color={colors.primary} size="small" />
                 ) : (
                   <Feather name="search" size={20} color={colors.primary} />
