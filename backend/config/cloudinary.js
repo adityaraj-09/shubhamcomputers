@@ -61,4 +61,51 @@ const deleteFromCloudinary = async (publicId, resourceType = 'raw') => {
   return cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
 };
 
-module.exports = { uploadToCloudinary, renameOnCloudinary, deleteFromCloudinary };
+/**
+ * Delete a Cloudinary asset by trying common resource types.
+ * Useful when stored files may be either raw docs or images.
+ */
+const deleteFromCloudinaryAnyType = async (publicId) => {
+  const attempts = ['raw', 'image'];
+  for (const type of attempts) {
+    try {
+      const result = await deleteFromCloudinary(publicId, type);
+      if (result?.result === 'ok' || result?.result === 'not found') {
+        return result;
+      }
+    } catch (err) {
+      // try next type
+    }
+  }
+  return { result: 'not found' };
+};
+
+/**
+ * Delete all print-upload files attached to an order.
+ * @param {Array} items - order.items
+ */
+const deleteOrderFilesFromCloudinary = async (items = []) => {
+  const fileIds = [
+    ...new Set(
+      (items || [])
+        .filter((it) => it.type === 'print' && it.driveFileId)
+        .map((it) => it.driveFileId)
+    ),
+  ];
+
+  for (const publicId of fileIds) {
+    try {
+      await deleteFromCloudinaryAnyType(publicId);
+    } catch (err) {
+      console.error('Cloudinary delete failed for', publicId, err?.message || err);
+    }
+  }
+};
+
+module.exports = {
+  uploadToCloudinary,
+  renameOnCloudinary,
+  deleteFromCloudinary,
+  deleteFromCloudinaryAnyType,
+  deleteOrderFilesFromCloudinary,
+};

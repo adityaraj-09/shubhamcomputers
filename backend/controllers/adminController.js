@@ -4,6 +4,7 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 const PrintService = require('../models/PrintService');
 const WalletTransaction = require('../models/WalletTransaction');
+const { deleteOrderFilesFromCloudinary } = require('../config/cloudinary');
 
 // @desc    Get admin dashboard stats
 // @route   GET /api/admin/dashboard
@@ -142,6 +143,8 @@ exports.updateOrderStatus = async (req, res) => {
     }
 
     const order = await Order.findById(req.params.id);
+    const prevStatus = order.status;
+
     if (!order) {
       return res.status(404).json({ error: 'Order not found.' });
     }
@@ -172,6 +175,15 @@ exports.updateOrderStatus = async (req, res) => {
     order.status = status;
     if (adminNote) order.adminNote = adminNote;
     await order.save();
+
+    // Print shop cleanup: once an order reaches terminal states, remove uploaded files.
+    const movedToTerminal =
+      prevStatus !== status && (status === 'cancelled' || status === 'delivered');
+    if (movedToTerminal) {
+      deleteOrderFilesFromCloudinary(order.items).catch(err =>
+        console.error('Cloudinary cleanup failed (admin status update):', err?.message || err)
+      );
+    }
 
     res.json({ success: true, order });
   } catch (error) {

@@ -1,6 +1,19 @@
 const User = require('../models/User');
 const WalletTransaction = require('../models/WalletTransaction');
 const crypto = require('crypto');
+const Razorpay = require('razorpay');
+
+function getRazorpayClient() {
+  const keyId = process.env.RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+  if (!keyId || !keySecret) {
+    throw new Error('Razorpay credentials are not configured.');
+  }
+  return new Razorpay({
+    key_id: keyId,
+    key_secret: keySecret,
+  });
+}
 
 // @desc    Get wallet balance & recent transactions
 // @route   GET /api/wallet
@@ -21,13 +34,13 @@ exports.getWallet = async (req, res) => {
   }
 };
 
-// @desc    Initiate wallet top-up (generates UPI intent)
+// @desc    Initiate wallet top-up (create Razorpay order)
 // @route   POST /api/wallet/topup
 exports.initiateTopup = async (req, res) => {
   try {
-    const { amount } = req.body;
+    const amount = Number(req.body?.amount);
 
-    if (!amount || amount < 50) {
+    if (!Number.isFinite(amount) || amount < 50) {
       return res.status(400).json({ error: 'Minimum top-up amount is ₹50.' });
     }
 
@@ -35,8 +48,22 @@ exports.initiateTopup = async (req, res) => {
       return res.status(400).json({ error: 'Maximum top-up amount is ₹10,000.' });
     }
 
-    // Generate a unique transaction reference
+    const razorpay = getRazorpayClient();
+
+    // Generate a unique receipt/reference
     const txnRef = `SC-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+    const amountPaise = Math.round(amount * 100);
+
+    // Create order on Razorpay
+    const order = await razorpay.orders.create({
+      amount: amountPaise,
+      currency: 'INR',
+      receipt: txnRef,
+      notes: {
+        userId: String(req.user._id),
+        purpose: 'wallet_topup',
+      },
+    });
 
     // Create pending transaction
     const transaction = await WalletTransaction.create({
@@ -46,27 +73,20 @@ exports.initiateTopup = async (req, res) => {
       balanceAfter: req.user.walletBalance, // will update on confirmation
       description: `Wallet top-up of ₹${amount}`,
       reference: txnRef,
+      razorpayOrderId: order.id,
       status: 'pending'
     });
-
-    // Generate UPI deep link
-    const merchantName = process.env.UPI_MERCHANT_NAME || 'ShubhamComputers';
-    const merchantUPI = process.env.UPI_MERCHANT_ID || 'merchant@upi';
-    const upiLink = `upi://pay?pa=${encodeURIComponent(merchantUPI)}&pn=${encodeURIComponent(merchantName)}&am=${amount}&tn=${encodeURIComponent(`Wallet TopUp ${txnRef}`)}&tr=${txnRef}&cu=INR`;
 
     res.json({
       success: true,
       transactionId: transaction._id,
       txnRef,
       amount,
-      upiLink,
-      // Intent URLs for popular UPI apps
-      intents: {
-        generic: upiLink,
-        gpay: upiLink.replace('upi://', 'gpay://'),
-        phonepe: upiLink.replace('upi://', 'phonepe://'),
-        paytm: upiLink.replace('upi://', 'paytmmp://')
-      }
+      amountPaise,
+      keyId: process.env.RAZORPAY_KEY_ID,
+      merchantName: process.env.RAZORPAY_MERCHANT_NAME || 'Shubham Prints',
+      razorpayOrderId: order.id,
+      currency: order.currency
     });
   } catch (error) {
     console.error('Topup Initiation Error:', error);
@@ -74,43 +94,86 @@ exports.initiateTopup = async (req, res) => {
   }
 };
 
-// @desc    Confirm wallet top-up (after UPI payment)
+// @desc    Confirm wallet top-up (after Razorpay payment)
 // @route   POST /api/wallet/topup/confirm
 exports.confirmTopup = async (req, res) => {
   try {
-    const { transactionId, upiTransactionId } = req.body;
+    const {
+      transactionId,
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+    } = req.body;
 
     if (!transactionId) {
       return res.status(400).json({ error: 'Transaction ID is required.' });
     }
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({ error: 'Razorpay payment details are required.' });
+    }
 
-    const transaction = await WalletTransaction.findOne({
+    const pendingTx = await WalletTransaction.findOne({
       _id: transactionId,
       user: req.user._id,
       status: 'pending',
       type: 'topup'
     });
 
-    if (!transaction) {
+    if (!pendingTx) {
+      const completedTx = await WalletTransaction.findOne({
+        _id: transactionId,
+        user: req.user._id,
+        status: 'completed',
+        type: 'topup',
+      });
+      if (completedTx) {
+        const user = await User.findById(req.user._id);
+        return res.json({
+          success: true,
+          message: `₹${completedTx.amount} already added to wallet.`,
+          balance: user.walletBalance,
+          transaction: completedTx,
+        });
+      }
       return res.status(404).json({ error: 'Pending transaction not found.' });
+    }
+
+    if (pendingTx.razorpayOrderId && pendingTx.razorpayOrderId !== razorpay_order_id) {
+      return res.status(400).json({ error: 'Order ID mismatch for this transaction.' });
+    }
+
+    const generatedSignature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+      .digest('hex');
+
+    if (generatedSignature !== razorpay_signature) {
+      pendingTx.status = 'failed';
+      pendingTx.razorpayOrderId = razorpay_order_id;
+      pendingTx.razorpayPaymentId = razorpay_payment_id;
+      pendingTx.razorpaySignature = razorpay_signature;
+      await pendingTx.save();
+      return res.status(400).json({ error: 'Payment signature verification failed.' });
     }
 
     // Update wallet balance
     const user = await User.findById(req.user._id);
-    user.walletBalance += transaction.amount;
+    user.walletBalance += pendingTx.amount;
     await user.save();
 
     // Update transaction
-    transaction.status = 'completed';
-    transaction.balanceAfter = user.walletBalance;
-    transaction.upiTransactionId = upiTransactionId || '';
-    await transaction.save();
+    pendingTx.status = 'completed';
+    pendingTx.balanceAfter = user.walletBalance;
+    pendingTx.razorpayOrderId = razorpay_order_id;
+    pendingTx.razorpayPaymentId = razorpay_payment_id;
+    pendingTx.razorpaySignature = razorpay_signature;
+    await pendingTx.save();
 
     res.json({
       success: true,
-      message: `₹${transaction.amount} added to wallet.`,
+      message: `₹${pendingTx.amount} added to wallet.`,
       balance: user.walletBalance,
-      transaction
+      transaction: pendingTx
     });
   } catch (error) {
     console.error('Topup Confirmation Error:', error);

@@ -30,6 +30,15 @@ const walletTransactionSchema = new mongoose.Schema({
   upiTransactionId: {
     type: String
   },
+  razorpayOrderId: {
+    type: String
+  },
+  razorpayPaymentId: {
+    type: String
+  },
+  razorpaySignature: {
+    type: String
+  },
   status: {
     type: String,
     enum: ['pending', 'completed', 'failed'],

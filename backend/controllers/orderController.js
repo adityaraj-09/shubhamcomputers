@@ -3,6 +3,7 @@ const User = require('../models/User');
 const WalletTransaction = require('../models/WalletTransaction');
 const Inquiry = require('../models/Inquiry');
 const { renameFilesForOrder } = require('./uploadController');
+const { deleteOrderFilesFromCloudinary } = require('../config/cloudinary');
 
 // @desc    Create new order (payment from wallet)
 // @route   POST /api/orders
@@ -186,6 +187,11 @@ exports.cancelOrder = async (req, res) => {
     order.status = 'cancelled';
     order.payment.status = 'refunded';
     await order.save();
+
+    // Print shop cleanup: remove uploaded print files after cancellation.
+    deleteOrderFilesFromCloudinary(order.items).catch(err =>
+      console.error('Cloudinary cleanup failed (user cancel):', err?.message || err)
+    );
 
     res.json({
       success: true,
