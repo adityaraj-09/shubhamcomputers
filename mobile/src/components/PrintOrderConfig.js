@@ -18,6 +18,7 @@ import { colors, radius } from '../theme/colors';
 import { href } from '../utils/routes';
 import FileTypeIcon from './FileTypeIcon';
 import ImageEditModal from './ImageEditModal';
+import FilePreviewModal from './FilePreviewModal';
 
 const COLOR_PRICE = { bw: 3, colour: 10 };
 
@@ -68,6 +69,7 @@ export default function PrintOrderConfig({ uploadedFiles, onAddMoreFiles, onBack
   const [configs, setConfigs] = useState(() => uploadedFiles.map(() => defaultConfig()));
   const [editorVisible, setEditorVisible] = useState(false);
   const [editorAsset, setEditorAsset] = useState(null);
+  const [previewVisible, setPreviewVisible] = useState(false);
   const scrollRef = useRef(null);
 
   useEffect(() => {
@@ -214,6 +216,27 @@ export default function PrintOrderConfig({ uploadedFiles, onAddMoreFiles, onBack
           }
         }}
       />
+      <FilePreviewModal
+        visible={previewVisible}
+        file={{
+          ...currentFile,
+          name: currentFile?.name,
+          uri: currentFile?.viewLink || currentFile?.thumbnailLink || currentFile?.uri || null,
+        }}
+        onClose={() => setPreviewVisible(false)}
+        onEditImage={
+          currentIsImage && (currentFile?.viewLink || currentFile?.thumbnailLink || currentFile?.uri)
+            ? () => {
+                setPreviewVisible(false);
+                setEditorAsset({
+                  name: currentFile?.name || 'image.jpg',
+                  uri: currentFile?.viewLink || currentFile?.thumbnailLink || currentFile?.uri,
+                });
+                setEditorVisible(true);
+              }
+            : null
+        }
+      />
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} hitSlop={12}>
           <Feather name="arrow-left" size={22} color={colors.textPrimary} />
@@ -261,8 +284,29 @@ export default function PrintOrderConfig({ uploadedFiles, onAddMoreFiles, onBack
         {current + 1}/{uploadedFiles.length}
       </Text>
 
-      <ScrollView style={styles.config} contentContainerStyle={{ paddingBottom: 120 }}>
+      <ScrollView style={styles.config} contentContainerStyle={{ paddingBottom: 24 }}>
         <Text style={styles.secTitle}>Selected file preview</Text>
+        <View style={styles.previewActions}>
+          <TouchableOpacity style={styles.previewActionBtn} onPress={() => setPreviewVisible(true)}>
+            <Feather name="eye" size={14} color={colors.primary} />
+            <Text style={styles.previewActionText}>Open preview</Text>
+          </TouchableOpacity>
+          {currentIsImage && (
+            <TouchableOpacity
+              style={styles.previewActionBtn}
+              onPress={() => {
+                setEditorAsset({
+                  name: currentFile?.name || 'image.jpg',
+                  uri: currentFile?.viewLink || currentFile?.thumbnailLink || currentFile?.uri,
+                });
+                setEditorVisible(true);
+              }}
+            >
+              <Feather name="edit-2" size={14} color={colors.primary} />
+              <Text style={styles.previewActionText}>Edit & re-add</Text>
+            </TouchableOpacity>
+          )}
+        </View>
         <View style={styles.previewCard}>
           {currentIsImage && (currentFile?.viewLink || currentFile?.thumbnailLink) ? (
             <Image
@@ -670,6 +714,19 @@ const styles = StyleSheet.create({
   fileRowMeta: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
   secTitle: { fontSize: 15, fontWeight: '700', color: colors.textPrimary, marginTop: 16 },
   secSub: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  previewActions: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
+  previewActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.bgCard,
+  },
+  previewActionText: { fontSize: 12, color: colors.primary, fontWeight: '700' },
   rowBetween: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -722,15 +779,11 @@ const styles = StyleSheet.create({
   applyText: { color: colors.textSecondary, fontSize: 13 },
   applyBtn: { color: colors.primary, fontWeight: '700' },
   bottom: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    paddingBottom: 28,
+    paddingBottom: 20,
     backgroundColor: colors.bgCard,
     borderTopWidth: 1,
     borderTopColor: colors.border,

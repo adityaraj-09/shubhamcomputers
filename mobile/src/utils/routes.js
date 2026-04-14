@@ -9,6 +9,7 @@ export const href = {
   checkout: '/(tabs)/home/checkout',
   printStore: '/(tabs)/home/print-store',
   passportPhotos: '/(tabs)/home/passport-photos',
+  pvcCard: '/(tabs)/home/pvc-card',
   onDemandPrint: '/(tabs)/home/on-demand-print',
   printService: (id) => `/(tabs)/home/print-service/${encodeURIComponent(String(id))}`,
   product: (id) => `/(tabs)/home/product/${encodeURIComponent(String(id))}`,

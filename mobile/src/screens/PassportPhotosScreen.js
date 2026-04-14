@@ -21,6 +21,7 @@ import { colors, radius, spacing } from '../theme/colors';
 import { href } from '../utils/routes';
 import FileTypeIcon from '../components/FileTypeIcon';
 import ImageEditModal from '../components/ImageEditModal';
+import FilePreviewModal from '../components/FilePreviewModal';
 
 const SIZES = [
   { id: 'std', label: 'Standard Passport', dims: '35 × 45 mm', badge: 'Most Popular' },
@@ -87,6 +88,7 @@ export default function PassportPhotosScreen() {
   const [heroErr, setHeroErr] = useState(false);
   const [editorVisible, setEditorVisible] = useState(false);
   const [editorAsset, setEditorAsset] = useState(null);
+  const [previewVisible, setPreviewVisible] = useState(false);
   const [photoBw, setPhotoBw] = useState(false);
   const origin = getApiOrigin();
 
@@ -218,6 +220,28 @@ export default function PassportPhotosScreen() {
           );
         }}
       />
+      <FilePreviewModal
+        visible={previewVisible}
+        file={{
+          name: uploadedPhoto?.name || 'passport-photo.jpg',
+          uri: uploadedPhoto?.viewLink || uploadedPhoto?.thumbnailLink || null,
+          mimeType: uploadedPhoto?.mimeType || 'image/jpeg',
+        }}
+        onClose={() => setPreviewVisible(false)}
+        onEditImage={
+          uploadedPhoto?.viewLink || uploadedPhoto?.thumbnailLink
+            ? async () => {
+                const uri = uploadedPhoto?.viewLink || uploadedPhoto?.thumbnailLink;
+                setPreviewVisible(false);
+                setEditorAsset({
+                  uri,
+                  name: uploadedPhoto?.name || 'passport-photo.jpg',
+                });
+                setEditorVisible(true);
+              }
+            : null
+        }
+      />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Feather name="arrow-left" size={22} color={colors.textPrimary} />
@@ -272,6 +296,10 @@ export default function PassportPhotosScreen() {
                   <Text style={styles.upOk}>Ready to print</Text>
                 </View>
                 {photoBw && <Text style={styles.bwTag}>B/W preference selected</Text>}
+                <TouchableOpacity style={styles.previewBtn} onPress={() => setPreviewVisible(true)}>
+                  <Feather name="eye" size={14} color={colors.primary} />
+                  <Text style={styles.previewBtnText}>Preview / Edit</Text>
+                </TouchableOpacity>
               </View>
               <TouchableOpacity
                 onPress={() => {
@@ -456,6 +484,13 @@ const styles = StyleSheet.create({
   upOkRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
   upOk: { fontSize: 12, color: colors.accent, fontWeight: '600' },
   bwTag: { fontSize: 11, color: colors.primaryLight, marginTop: 4, fontWeight: '600' },
+  previewBtn: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  previewBtnText: { fontSize: 12, color: colors.primary, fontWeight: '700' },
   uploadBtn: {
     marginHorizontal: spacing.page,
     marginTop: 12,

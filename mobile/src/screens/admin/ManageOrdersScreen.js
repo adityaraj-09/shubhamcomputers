@@ -43,6 +43,44 @@ const isImageFile = (item) => {
   return /\.(png|jpe?g|webp|gif|bmp|heic|heif)(\?|$)/i.test(url);
 };
 
+const getDownloadableFiles = (item) => {
+  const links = [];
+  const pushLink = (url, label) => {
+    if (!url || typeof url !== 'string') return;
+    if (!/^https?:\/\//i.test(url)) return;
+    if (links.some((l) => l.url === url)) return;
+    links.push({ url, label });
+  };
+
+  pushLink(item?.fileUrl, 'Main file');
+
+  if (Array.isArray(item?.attachments)) {
+    item.attachments.forEach((url, idx) => pushLink(url, `Attachment ${idx + 1}`));
+  }
+
+  const opt = item?.options || {};
+  pushLink(opt.fileUrl, 'File');
+  pushLink(opt.frontImage, 'Front image');
+  pushLink(opt.backImage, 'Back image');
+  pushLink(opt.frontFileUrl, 'Front file');
+  pushLink(opt.backFileUrl, 'Back file');
+
+  if (Array.isArray(opt.attachments)) {
+    opt.attachments.forEach((url, idx) => pushLink(url, `Option attachment ${idx + 1}`));
+  }
+
+  if (Array.isArray(opt.files)) {
+    opt.files.forEach((file, idx) => {
+      if (typeof file === 'string') pushLink(file, `File ${idx + 1}`);
+      else {
+        pushLink(file?.url || file?.fileUrl || file?.viewLink, file?.name || `File ${idx + 1}`);
+      }
+    });
+  }
+
+  return links;
+};
+
 export default function ManageOrdersScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -190,32 +228,54 @@ export default function ManageOrdersScreen() {
                 </TouchableOpacity>
 
                 {open &&
-                  order.items?.map((item, i) => (
-                    <View key={i} style={styles.itemCard}>
-                      <Text style={styles.itemBadge}>{item.type?.toUpperCase()}</Text>
-                      <Text style={styles.itemName}>{item.name}</Text>
-                      <Text style={styles.itemPrice}>₹{item.price}</Text>
-                      {!!item.fileUrl && (
-                        <View style={styles.fileWrap}>
-                          {isImageFile(item) ? (
-                            <Image source={{ uri: item.fileUrl }} style={styles.filePreview} />
-                          ) : (
-                            <View style={styles.fileFallback}>
-                              <Feather name="file-text" size={16} color={colors.primaryLight} />
-                              <Text style={styles.fileFallbackText}>Uploaded file available</Text>
+                  order.items?.map((item, i) => {
+                    const downloadableFiles = getDownloadableFiles(item);
+                    return (
+                      <View key={i} style={styles.itemCard}>
+                        <Text style={styles.itemBadge}>{item.type?.toUpperCase()}</Text>
+                        <Text style={styles.itemName}>{item.name}</Text>
+                        <Text style={styles.itemPrice}>₹{item.price}</Text>
+                        {!!item.fileUrl && (
+                          <View style={styles.fileWrap}>
+                            {isImageFile(item) ? (
+                              <Image source={{ uri: item.fileUrl }} style={styles.filePreview} />
+                            ) : (
+                              <View style={styles.fileFallback}>
+                                <Feather name="file-text" size={16} color={colors.primaryLight} />
+                                <Text style={styles.fileFallbackText}>Uploaded file available</Text>
+                              </View>
+                            )}
+                            <TouchableOpacity
+                              style={styles.fileBtn}
+                              onPress={() => Linking.openURL(item.fileUrl)}
+                            >
+                              <Feather name="external-link" size={14} color={colors.primaryLight} />
+                              <Text style={styles.fileBtnText}>View uploaded file</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                        {downloadableFiles.length > 0 && (
+                          <View style={styles.downloadWrap}>
+                            <Text style={styles.downloadTitle}>Downloads</Text>
+                            <View style={styles.downloadButtons}>
+                              {downloadableFiles.map((file, fileIdx) => (
+                                <TouchableOpacity
+                                  key={`${order._id}-${i}-${fileIdx}`}
+                                  style={styles.downloadBtn}
+                                  onPress={() => Linking.openURL(file.url)}
+                                >
+                                  <Feather name="download" size={14} color={colors.primaryLight} />
+                                  <Text style={styles.downloadBtnText} numberOfLines={1}>
+                                    {file.label}
+                                  </Text>
+                                </TouchableOpacity>
+                              ))}
                             </View>
-                          )}
-                          <TouchableOpacity
-                            style={styles.fileBtn}
-                            onPress={() => Linking.openURL(item.fileUrl)}
-                          >
-                            <Feather name="external-link" size={14} color={colors.primaryLight} />
-                            <Text style={styles.fileBtnText}>View uploaded file</Text>
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                    </View>
-                  ))}
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
 
                 <View style={styles.actions}>
                   {order.status === 'confirmed' && (
@@ -348,6 +408,27 @@ const styles = StyleSheet.create({
     borderColor: colors.primary + '44',
   },
   fileBtnText: { fontSize: 12, color: colors.primaryLight, fontWeight: '700' },
+  downloadWrap: {
+    marginTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    paddingTop: 8,
+  },
+  downloadTitle: { fontSize: 12, color: colors.textMuted, marginBottom: 6, fontWeight: '700' },
+  downloadButtons: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  downloadBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: colors.bgInput,
+    borderWidth: 1,
+    borderColor: colors.border,
+    maxWidth: '100%',
+  },
+  downloadBtnText: { fontSize: 12, color: colors.textPrimary, fontWeight: '700' },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 12 },
   cancelBtn: {
     paddingHorizontal: 14,

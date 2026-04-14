@@ -35,6 +35,8 @@ export default function HomeScreen() {
   const [imgErr, setImgErr] = useState({});
 
   const origin = getApiOrigin();
+  const nowHour = new Date().getHours();
+  const isStoreOpen = nowHour >= 9 && nowHour < 20;
 
   useEffect(() => {
     if (!user?.address?.lat) setShowLocation(true);
@@ -92,6 +94,13 @@ export default function HomeScreen() {
         <View style={styles.searchPad}>
           <SearchBar />
         </View>
+        <View style={styles.noticeWrap}>
+          <View style={[styles.noticeDot, isStoreOpen ? styles.noticeDotOpen : styles.noticeDotClosed]} />
+          <Text style={styles.noticeText}>
+            Notice: Store is {isStoreOpen ? 'Open' : 'Closed'} now
+          </Text>
+          <Text style={styles.noticeTime}>9 AM - 8 PM</Text>
+        </View>
 
         <TouchableOpacity
           activeOpacity={0.92}
@@ -146,6 +155,17 @@ export default function HomeScreen() {
                 <Feather name="image" size={28} color={colors.primaryLight} />
               </View>
             )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.miniBanner, styles.miniPvc]}
+            onPress={() => router.push(href.pvcCard)}
+            activeOpacity={0.9}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={styles.miniTitle}>PVC Card Print</Text>
+              <Text style={styles.miniSub}>Front + back upload</Text>
+            </View>
+            <Feather name="credit-card" size={28} color={colors.primaryLight} />
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.miniBanner, styles.miniDemand]}
@@ -236,6 +256,38 @@ const styles = StyleSheet.create({
   },
   walletAmt: { fontSize: 14, fontWeight: '800', color: colors.accent },
   searchPad: { paddingHorizontal: spacing.page },
+  noticeWrap: {
+    marginHorizontal: spacing.page,
+    marginTop: 10,
+    marginBottom: 12,
+    minHeight: 34,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.bgCard,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  noticeDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  noticeDotOpen: { backgroundColor: colors.accent },
+  noticeDotClosed: { backgroundColor: colors.danger },
+  noticeText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
+  noticeTime: {
+    fontSize: 11,
+    color: colors.textMuted,
+    fontWeight: '600',
+  },
   bannerPrint: {
     marginHorizontal: spacing.page,
     borderRadius: radius.lg,
@@ -264,12 +316,13 @@ const styles = StyleSheet.create({
   },
   miniRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
     paddingHorizontal: spacing.page,
     marginBottom: 8,
   },
   miniBanner: {
-    flex: 1,
+    width: '48%',
     flexDirection: 'row',
     alignItems: 'center',
     padding: 14,
@@ -280,6 +333,7 @@ const styles = StyleSheet.create({
   },
   miniPassport: { backgroundColor: '#f2f2f4' },
   miniDemand: { backgroundColor: '#ececee' },
+  miniPvc: { backgroundColor: '#efeff2' },
   miniTitle: { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
   miniSub: { fontSize: 12, color: colors.textSecondary, marginTop: 4 },
   miniImg: { width: 56, height: 56, resizeMode: 'contain' },

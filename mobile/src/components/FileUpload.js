@@ -15,6 +15,7 @@ import API from '../api/client';
 import { colors, radius } from '../theme/colors';
 import FileTypeIcon from './FileTypeIcon';
 import ImageEditModal from './ImageEditModal';
+import FilePreviewModal from './FilePreviewModal';
 
 const MAX_FILES = 15;
 const MAX_SIZE_MB = 50;
@@ -51,6 +52,9 @@ export default function FileUpload({ onFilesUploaded }) {
   const [uploading, setUploading] = useState(false);
   const [editorVisible, setEditorVisible] = useState(false);
   const [editorAsset, setEditorAsset] = useState(null);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewFile, setPreviewFile] = useState(null);
+  const [previewPendingIndex, setPreviewPendingIndex] = useState(null);
 
   const appendPickedFiles = (selected) => {
     const totalCount = pending.length + uploadedFiles.length + selected.length;
@@ -128,6 +132,23 @@ export default function FileUpload({ onFilesUploaded }) {
     });
   };
 
+  const openPreview = (file, pendingIndex = null) => {
+    setPreviewFile(file);
+    setPreviewPendingIndex(pendingIndex);
+    setPreviewVisible(true);
+  };
+
+  const startEditFromPreview = () => {
+    if (!previewFile?.uri) return;
+    setPreviewVisible(false);
+    setEditorAsset({
+      ...previewFile,
+      width: previewFile.width,
+      height: previewFile.height,
+    });
+    setEditorVisible(true);
+  };
+
   const handleUpload = async () => {
     if (pending.length === 0) return;
     setUploading(true);
@@ -170,18 +191,32 @@ export default function FileUpload({ onFilesUploaded }) {
         onDone={(edited) => {
           setEditorVisible(false);
           setEditorAsset(null);
-          appendPickedFiles([
-            {
-              uri: edited.uri,
-              name: edited.name || 'image.jpg',
-              size: edited.size || 0,
-              mimeType: edited.mimeType || 'image/jpeg',
-            },
-          ]);
+          const editedFile = {
+            uri: edited.uri,
+            name: edited.name || 'image.jpg',
+            size: edited.size || 0,
+            mimeType: edited.mimeType || 'image/jpeg',
+          };
+          if (typeof previewPendingIndex === 'number') {
+            setPending((prev) => prev.map((f, idx) => (idx === previewPendingIndex ? editedFile : f)));
+            setPreviewPendingIndex(null);
+          } else {
+            appendPickedFiles([editedFile]);
+          }
           if (edited.isBlackWhite) {
             Toast.show({ type: 'info', text1: 'B/W preference noted for this image' });
           }
         }}
+      />
+      <FilePreviewModal
+        visible={previewVisible}
+        file={previewFile}
+        onClose={() => {
+          setPreviewVisible(false);
+          setPreviewFile(null);
+          setPreviewPendingIndex(null);
+        }}
+        onEditImage={typeof previewPendingIndex === 'number' ? startEditFromPreview : null}
       />
       <View style={styles.dropzone}>
         <Feather name="upload-cloud" size={40} color={colors.primary} />
@@ -219,9 +254,14 @@ export default function FileUpload({ onFilesUploaded }) {
                 </Text>
                 <Text style={styles.fileMeta}>Uploaded to Drive</Text>
               </View>
-              <TouchableOpacity onPress={() => removeUploaded(i)} hitSlop={8}>
-                <Feather name="x" size={18} color={colors.textMuted} />
-              </TouchableOpacity>
+              <View style={styles.actionsRow}>
+                <TouchableOpacity onPress={() => openPreview(f)} hitSlop={8}>
+                  <Feather name="eye" size={18} color={colors.textMuted} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => removeUploaded(i)} hitSlop={8}>
+                  <Feather name="x" size={18} color={colors.textMuted} />
+                </TouchableOpacity>
+              </View>
             </View>
           ))}
         </View>
@@ -242,9 +282,14 @@ export default function FileUpload({ onFilesUploaded }) {
                   </Text>
                   <Text style={styles.fileMeta}>{formatSize(file.size)}</Text>
                 </View>
-                <TouchableOpacity onPress={() => removePending(i)} disabled={uploading}>
-                  <Feather name="x" size={18} color={colors.textMuted} />
-                </TouchableOpacity>
+                <View style={styles.actionsRow}>
+                  <TouchableOpacity onPress={() => openPreview(file, i)} disabled={uploading}>
+                    <Feather name="eye" size={18} color={colors.textMuted} />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => removePending(i)} disabled={uploading}>
+                    <Feather name="x" size={18} color={colors.textMuted} />
+                  </TouchableOpacity>
+                </View>
               </View>
             ))}
           </ScrollView>
@@ -339,6 +384,7 @@ const styles = StyleSheet.create({
   fileInfo: { flex: 1 },
   fileName: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
   fileMeta: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  actionsRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   uploadBtn: {
     flexDirection: 'row',
     alignItems: 'center',

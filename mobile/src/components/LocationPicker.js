@@ -233,7 +233,7 @@ export default function LocationPicker({ visible, onClose }) {
             <View style={styles.descRow}>
               <Feather name="info" size={14} color={colors.textMuted} style={{ marginRight: 8, marginTop: 2 }} />
               <Text style={styles.desc}>
-                Delivery within 3 km of our Jhajjar store, typically under 30 minutes.
+                You&apos;re located within Jhajjar.
               </Text>
             </View>
             <TouchableOpacity
