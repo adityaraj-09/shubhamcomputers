@@ -19,9 +19,11 @@ import { colors, radius, spacing } from '../../theme/colors';
 import { href } from '../../utils/routes';
 
 const statusFlow = ['confirmed', 'delivered'];
+const inquiryStatusFlow = ['confirmed', 'contacted', 'delivered'];
 const statusColors = {
   placed: '#78716c',
   confirmed: '#b45309',
+  contacted: '#7c3aed',
   delivered: '#14532d',
   cancelled: '#dc2626',
 };
@@ -117,13 +119,18 @@ export default function ManageOrdersScreen() {
     }
   };
 
-  const getNextStatus = (current) => {
-    const idx = statusFlow.indexOf(current);
-    return idx !== -1 && idx < statusFlow.length - 1 ? statusFlow[idx + 1] : null;
+  const getNextStatus = (current, isInquiry) => {
+    const flow = isInquiry ? inquiryStatusFlow : statusFlow;
+    const idx = flow.indexOf(current);
+    return idx !== -1 && idx < flow.length - 1 ? flow[idx + 1] : null;
   };
 
-  const filters = ['all', 'confirmed', 'delivered', 'cancelled'];
-  const filteredOrders = filter === 'all' ? orders : orders.filter((o) => o.status === filter);
+  const filters = ['all', 'enquiries', 'confirmed', 'contacted', 'delivered', 'cancelled'];
+  const filteredOrders = filter === 'all'
+    ? orders
+    : filter === 'enquiries'
+    ? orders.filter((o) => o.items?.some((i) => i.type === 'inquiry'))
+    : orders.filter((o) => o.status === filter);
 
   if (loading) {
     return (
@@ -173,15 +180,22 @@ export default function ManageOrdersScreen() {
           <Text style={styles.empty}>No orders found</Text>
         ) : (
           filteredOrders.map((order) => {
-            const next = getNextStatus(order.status);
+            const isInquiry = order.items?.some((i) => i.type === 'inquiry');
+            const next = getNextStatus(order.status, isInquiry);
             const color = statusColors[order.status] || '#888';
             const open = expanded[order._id];
             const itemCount = order.items?.length || 0;
 
             return (
-              <View key={order._id} style={styles.card}>
+              <View key={order._id} style={[styles.card, isInquiry && styles.cardInquiry]}>
                 <View style={styles.row1}>
                   <View>
+                    {isInquiry && (
+                      <View style={styles.inquiryBadge}>
+                        <Feather name="phone-call" size={10} color={colors.primary} />
+                        <Text style={styles.inquiryBadgeText}>Enquiry</Text>
+                      </View>
+                    )}
                     <Text style={styles.oid}>{order.orderId}</Text>
                     <Text style={styles.ago}>{timeAgo(order.createdAt)}</Text>
                   </View>
@@ -206,7 +220,7 @@ export default function ManageOrdersScreen() {
                     <Feather name="clock" size={12} color={colors.textMuted} style={{ marginRight: 6 }} />
                     <Text style={styles.meta}>{formatDateTime(order.createdAt)}</Text>
                   </View>
-                  <Text style={styles.amt}>₹{order.amount}</Text>
+                  <Text style={styles.amt}>{isInquiry ? 'To be quoted' : `₹${order.amount}`}</Text>
                 </View>
                 <View style={styles.addrRow}>
                   <Feather name="map-pin" size={14} color={colors.textMuted} style={{ marginTop: 2, marginRight: 8 }} />
@@ -230,11 +244,35 @@ export default function ManageOrdersScreen() {
                 {open &&
                   order.items?.map((item, i) => {
                     const downloadableFiles = getDownloadableFiles(item);
+                    const isInqItem = item.type === 'inquiry';
                     return (
-                      <View key={i} style={styles.itemCard}>
+                      <View key={i} style={[styles.itemCard, isInqItem && styles.itemCardInquiry]}>
                         <Text style={styles.itemBadge}>{item.type?.toUpperCase()}</Text>
                         <Text style={styles.itemName}>{item.name}</Text>
-                        <Text style={styles.itemPrice}>₹{item.price}</Text>
+                        {isInqItem ? (
+                          <>
+                            {!!item.options?.requirements && (
+                              <View style={styles.reqBox}>
+                                <Text style={styles.reqLabel}>Requirements</Text>
+                                <Text style={styles.reqText}>{item.options.requirements}</Text>
+                              </View>
+                            )}
+                            {!!item.options?.quantity && (
+                              <Text style={styles.reqMeta}>Quantity: {item.options.quantity}</Text>
+                            )}
+                            {!!item.options?.contactPhone && (
+                              <TouchableOpacity
+                                style={styles.callInlineBtn}
+                                onPress={() => Linking.openURL(`tel:${item.options.contactPhone}`)}
+                              >
+                                <Feather name="phone" size={13} color="#fff" />
+                                <Text style={styles.callInlineBtnText}>Call {item.options.contactPhone}</Text>
+                              </TouchableOpacity>
+                            )}
+                          </>
+                        ) : (
+                          <Text style={styles.itemPrice}>₹{item.price}</Text>
+                        )}
                         {!!item.fileUrl && (
                           <View style={styles.fileWrap}>
                             {isImageFile(item) ? (
@@ -371,7 +409,41 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  itemBadge: { fontSize: 10, fontWeight: '800', color: colors.primaryLight },
+  cardInquiry: {
+    borderColor: colors.primary + '55',
+    borderWidth: 1.5,
+  },
+  inquiryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 2,
+  },
+  inquiryBadgeText: { fontSize: 10, fontWeight: '800', color: colors.primary, textTransform: 'uppercase' },
+  itemCardInquiry: { borderColor: colors.primary + '44' },
+  reqBox: {
+    marginTop: 8,
+    backgroundColor: colors.bgCard,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 8,
+  },
+  reqLabel: { fontSize: 10, fontWeight: '800', color: colors.textMuted, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.4 },
+  reqText: { fontSize: 13, color: colors.textPrimary, lineHeight: 18 },
+  reqMeta: { fontSize: 12, color: colors.textSecondary, marginTop: 6 },
+  callInlineBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+    alignSelf: 'flex-start',
+    backgroundColor: colors.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  callInlineBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
   itemName: { fontSize: 14, color: colors.textPrimary, marginTop: 4 },
   itemPrice: { fontSize: 13, color: colors.accent, marginTop: 4, fontWeight: '700' },
   fileWrap: { marginTop: 10, gap: 8 },

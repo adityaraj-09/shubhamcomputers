@@ -136,7 +136,7 @@ exports.getAllOrders = async (req, res) => {
 exports.updateOrderStatus = async (req, res) => {
   try {
     const { status, adminNote } = req.body;
-    const validStatuses = ['delivered', 'cancelled'];
+    const validStatuses = ['delivered', 'contacted', 'cancelled'];
 
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: 'Invalid status.' });

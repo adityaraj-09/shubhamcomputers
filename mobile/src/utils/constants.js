@@ -11,6 +11,7 @@ export const MAX_WALLET_TOPUP = 10000;
 export const ORDER_STATUS_MAP = {
   placed: { label: 'Placed', color: '#3f3f46', bg: 'rgba(63, 63, 70, 0.1)' },
   confirmed: { label: 'Confirmed', color: '#b45309', bg: 'rgba(180, 83, 9, 0.12)' },
+  contacted: { label: 'Contacted', color: '#7c3aed', bg: 'rgba(124, 58, 237, 0.12)' },
   processing: { label: 'Processing', color: '#b45309', bg: 'rgba(180, 83, 9, 0.12)' },
   'out-for-delivery': { label: 'Out for Delivery', color: '#525252', bg: 'rgba(82, 82, 82, 0.1)' },
   delivered: { label: 'Delivered', color: '#14532d', bg: 'rgba(20, 83, 45, 0.12)' },

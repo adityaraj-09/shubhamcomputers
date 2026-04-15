@@ -13,7 +13,7 @@ import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import { useAuth } from '../context/AuthContext';
 import API from '../api/client';
-import { colors, radius, shadows, typography } from '../theme/colors';
+import { colors, radius, shadows, spacing, typography } from '../theme/colors';
 import { href } from '../utils/routes';
 
 export default function MartSection({ categories }) {
@@ -68,7 +68,7 @@ export default function MartSection({ categories }) {
         <View style={styles.titleIconWrap}>
           <Feather name="shopping-bag" size={20} color={colors.accent} />
         </View>
-        <Text style={[styles.heading, { flex: 1 }]}>Stationery mart</Text>
+        <Text style={[styles.heading, { flex: 1, marginBottom: 0 }]}>Stationery mart</Text>
       </View>
       {chips.length > 0 && (
         <ScrollView
@@ -121,18 +121,18 @@ export default function MartSection({ categories }) {
                     <Feather name="package" size={32} color={colors.textMuted} />
                   </View>
                 )}
+                {product.mrp > product.price && (
+                  <View style={styles.discountBadge}>
+                    <Text style={styles.discountText}>
+                      {Math.round(((product.mrp - product.price) / product.mrp) * 100)}%
+                    </Text>
+                  </View>
+                )}
                 {product.stock < 1 && (
                   <View style={styles.outBadge}>
                     <Text style={styles.outText}>Out</Text>
                   </View>
                 )}
-                <TouchableOpacity
-                  style={styles.addBtn}
-                  onPress={() => handleAddToCart(product)}
-                  disabled={product.stock < 1}
-                >
-                  <Text style={styles.addBtnText}>+</Text>
-                </TouchableOpacity>
               </View>
               <Text style={styles.pName} numberOfLines={2}>
                 {product.name}
@@ -143,6 +143,13 @@ export default function MartSection({ categories }) {
                   <Text style={styles.mrp}>₹{product.mrp}</Text>
                 )}
               </View>
+              <TouchableOpacity
+                style={[styles.addBtn, product.stock < 1 && styles.addBtnDisabled]}
+                onPress={(e) => { e.stopPropagation(); handleAddToCart(product); }}
+                disabled={product.stock < 1}
+              >
+                <Feather name="plus" size={14} color="#fff" />
+              </TouchableOpacity>
             </TouchableOpacity>
           ))}
         </View>
@@ -152,7 +159,7 @@ export default function MartSection({ categories }) {
 }
 
 const styles = StyleSheet.create({
-  section: { marginTop: 24, paddingHorizontal: 16 },
+  section: { marginTop: 24, paddingHorizontal: spacing.page },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 },
   titleIconWrap: {
     width: 44,
@@ -191,26 +198,31 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    gap: 10,
   },
   card: {
-    width: '24%',
+    width: '31%',
+    flexGrow: 1,
+    maxWidth: '32%',
     backgroundColor: colors.bgCard,
-    borderRadius: radius.sm,
-    padding: 6,
+    borderRadius: radius.md,
+    padding: 10,
     borderWidth: 1,
     borderColor: colors.border,
-    marginBottom: 8,
+    marginBottom: 0,
+    position: 'relative',
+    ...shadows.card,
   },
   imgWrap: {
+    width: '100%',
     aspectRatio: 1,
     borderRadius: radius.sm,
-    backgroundColor: colors.bgInput,
+    backgroundColor: colors.bgSurface,
     overflow: 'hidden',
     marginBottom: 8,
     position: 'relative',
   },
-  img: { width: '100%', height: '100%' },
+  img: { width: '100%', height: '100%', resizeMode: 'contain' },
   placeholder: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
@@ -227,21 +239,36 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   outText: { color: '#fff', fontSize: 10, fontWeight: '700' },
+  discountBadge: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    backgroundColor: colors.success,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  discountText: { color: '#fff', fontSize: 10, fontWeight: '800' },
   addBtn: {
     position: 'absolute',
-    bottom: 4,
-    right: 4,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    bottom: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
+    elevation: 4,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 4,
   },
-  addBtnText: { color: '#fff', fontSize: 16, fontWeight: '700', marginTop: -1 },
-  pName: { fontSize: 11, fontWeight: '700', color: colors.textPrimary, minHeight: 30 },
-  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
-  price: { fontSize: 12, fontWeight: '800', color: colors.accent },
+  addBtnDisabled: { backgroundColor: colors.textMuted },
+  pName: { fontSize: 12, fontWeight: '700', color: colors.textPrimary, minHeight: 32, lineHeight: 16 },
+  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
+  price: { fontSize: 13, fontWeight: '800', color: colors.accent },
   mrp: {
     fontSize: 10,
     color: colors.textMuted,

@@ -88,7 +88,22 @@ export default function FileUpload({ onFilesUploaded }) {
         copyToCacheDirectory: true,
       });
       if (result.canceled) return;
-      appendPickedFiles((result.assets || []).map(toFileMeta));
+      const assets = result.assets || [];
+      if (
+        assets.length === 1 &&
+        assets[0]?.uri &&
+        (assets[0]?.mimeType || '').startsWith('image/')
+      ) {
+        const first = assets[0];
+        setEditorAsset({
+          ...toFileMeta(first),
+          width: first.width,
+          height: first.height,
+        });
+        setEditorVisible(true);
+        return;
+      }
+      appendPickedFiles(assets.map(toFileMeta));
     } catch {
       Toast.show({ type: 'error', text1: 'Could not pick files' });
     }

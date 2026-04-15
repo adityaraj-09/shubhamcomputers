@@ -281,21 +281,27 @@ exports.createInquiryOrder = async (req, res) => {
     const { requirements, quantity } = req.body;
     const user = await User.findById(req.user._id);
 
+    if (!user) {
+      return res.status(401).json({ error: 'User not found.' });
+    }
+
     if (!requirements || !requirements.trim()) {
       return res.status(400).json({ error: 'Requirements are required.' });
     }
 
-    // Also persist in the Inquiry collection for contact management
-    await Inquiry.create({
-      name: user.name,
-      phone: user.phone,
-      requirements: requirements.trim().slice(0, 2000),
-      quantity: quantity ? String(quantity).trim().slice(0, 200) : '',
-    });
+    // Side-effect: persist in Inquiry collection for contact management (non-blocking)
+    try {
+      await Inquiry.create({
+        name: user.name || 'Customer',
+        phone: user.phone,
+        requirements: requirements.trim().slice(0, 2000),
+        quantity: quantity ? String(quantity).trim().slice(0, 200) : '',
+      });
+    } catch (inqErr) {
+      console.warn('Inquiry collection write failed (non-fatal):', inqErr.message);
+    }
 
-    user.numOrders += 1;
-    await user.save();
-
+    // Create the actual order
     const order = await Order.create({
       customer: user._id,
       items: [{
@@ -311,13 +317,19 @@ exports.createInquiryOrder = async (req, res) => {
       }],
       amount: 0,
       payment: { method: 'wallet', status: 'pending' },
-      deliveryAddress: user.address || { label: 'To be discussed', full: 'To be discussed' },
+      deliveryAddress: user.address && user.address.full
+        ? user.address
+        : { label: 'To be discussed', full: 'To be discussed' },
     });
+
+    // Increment numOrders after order is safely created
+    user.numOrders = (user.numOrders || 0) + 1;
+    await user.save();
 
     const populatedOrder = await Order.findById(order._id).populate('customer', 'name phone');
     res.status(201).json({ success: true, order: populatedOrder });
   } catch (error) {
-    console.error('Create Inquiry Order Error:', error);
+    console.error('Create Inquiry Order Error:', error.message, error.errors || '');
     res.status(500).json({ error: 'Failed to create order.' });
   }
 };

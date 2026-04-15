@@ -25,7 +25,8 @@ const API = axios.create({
 API.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (error.response?.status === 401) {
+    const url = error.config?.url || '';
+    if (error.response?.status === 401 && url.includes('/auth/me')) {
       await AsyncStorage.removeItem(TOKEN_KEY);
       delete API.defaults.headers.common.Authorization;
       onAuthFailure();

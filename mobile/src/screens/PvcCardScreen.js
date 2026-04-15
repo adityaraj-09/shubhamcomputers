@@ -18,29 +18,29 @@ import { useAuth } from '../context/AuthContext';
 import API from '../api/client';
 import { colors, radius, spacing } from '../theme/colors';
 import { href } from '../utils/routes';
-import FileTypeIcon from '../components/FileTypeIcon';
-import ImageEditModal from '../components/ImageEditModal';
-import FilePreviewModal from '../components/FilePreviewModal';
 
-const CARD_TYPES = ['Aadhaar', 'PAN', 'Voter ID', 'Driving License', 'Other'];
-const FINISH_TYPES = ['Glossy', 'Matte'];
-const BASE_PRICE = 60;
+const SERVICES = [
+  { id: 'print',     label: 'PVC Card Print',                price: 80  },
+  { id: 'lost_dl',   label: 'Lost DL PVC Charges',           price: 200 },
+  { id: 'lost_rc',   label: 'Lost RC PVC Card Charges',      price: 200 },
+  { id: 'lost_pan',  label: 'Lost PAN Card PVC Charges',     price: 200 },
+  { id: 'lost_vote', label: 'Lost Vote Card PVC Charges',    price: 200 },
+  { id: 'lost_aadh', label: 'Lost Aadhaar PVC Card Charges', price: 100 },
+];
 
 export default function PvcCardScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { addToCart } = useAuth();
-  const [cardType, setCardType] = useState(CARD_TYPES[0]);
-  const [finish, setFinish] = useState(FINISH_TYPES[0]);
-  const [quantity, setQuantity] = useState(1);
+
+  const [selectedService, setSelectedService] = useState('print');
+  const [frontLocal, setFrontLocal] = useState(null);
+  const [backLocal, setBackLocal] = useState(null);
   const [frontFile, setFrontFile] = useState(null);
   const [backFile, setBackFile] = useState(null);
   const [uploadingSide, setUploadingSide] = useState(null);
-  const [editorVisible, setEditorVisible] = useState(false);
-  const [editorAsset, setEditorAsset] = useState(null);
-  const [editingSide, setEditingSide] = useState(null);
-  const [previewVisible, setPreviewVisible] = useState(false);
-  const [previewFile, setPreviewFile] = useState(null);
+
+  const service = SERVICES.find((s) => s.id === selectedService);
 
   const uploadAsset = async (asset, side) => {
     setUploadingSide(side);
@@ -48,7 +48,7 @@ export default function PvcCardScreen() {
       const formData = new FormData();
       formData.append('files', {
         uri: asset.uri,
-        name: asset.fileName || asset.name || `${side}.jpg`,
+        name: asset.name || `${side}.jpg`,
         type: asset.mimeType || 'image/jpeg',
       });
       const { data } = await API.post('/upload', formData, {
@@ -58,12 +58,10 @@ export default function PvcCardScreen() {
       if (!uploaded) throw new Error('Upload failed');
       if (side === 'front') setFrontFile(uploaded);
       else setBackFile(uploaded);
-      Toast.show({ type: 'success', text1: `${side === 'front' ? 'Front' : 'Back'} image uploaded` });
     } catch (err) {
-      Toast.show({
-        type: 'error',
-        text1: err.response?.data?.error || 'Upload failed',
-      });
+      Toast.show({ type: 'error', text1: err.response?.data?.error || 'Upload failed' });
+      if (side === 'front') setFrontLocal(null);
+      else setBackLocal(null);
     } finally {
       setUploadingSide(null);
     }
@@ -82,15 +80,12 @@ export default function PvcCardScreen() {
     if (result.canceled) return;
     const asset = result.assets?.[0];
     if (!asset) return;
-    setEditingSide(side);
-    setEditorAsset({
-      uri: asset.uri,
-      name: asset.fileName || asset.name || `${side}.jpg`,
-      mimeType: asset.mimeType || 'image/jpeg',
-      width: asset.width,
-      height: asset.height,
-    });
-    setEditorVisible(true);
+    if (side === 'front') { setFrontLocal(asset.uri); setFrontFile(null); }
+    else { setBackLocal(asset.uri); setBackFile(null); }
+    await uploadAsset(
+      { uri: asset.uri, name: asset.fileName || `${side}.jpg`, mimeType: asset.mimeType || 'image/jpeg' },
+      side,
+    );
   };
 
   const pickFromFiles = async (side) => {
@@ -103,29 +98,23 @@ export default function PvcCardScreen() {
       if (result.canceled) return;
       const asset = result.assets?.[0];
       if (!asset?.uri) return;
-      setEditingSide(side);
-      setEditorAsset({
-        uri: asset.uri,
-        name: asset.name || `${side}.jpg`,
-        mimeType: asset.mimeType || 'image/jpeg',
-      });
-      setEditorVisible(true);
+      if (side === 'front') { setFrontLocal(asset.uri); setFrontFile(null); }
+      else { setBackLocal(asset.uri); setBackFile(null); }
+      await uploadAsset(
+        { uri: asset.uri, name: asset.name || `${side}.jpg`, mimeType: asset.mimeType || 'image/jpeg' },
+        side,
+      );
     } catch {
       Toast.show({ type: 'error', text1: 'Could not pick file' });
     }
   };
 
-  const openPreview = (file) => {
-    setPreviewFile({
-      name: file?.name || file?.originalName || 'card-image.jpg',
-      uri: file?.viewLink || file?.thumbnailLink || file?.uri || null,
-      mimeType: file?.mimeType || 'image/jpeg',
-    });
-    setPreviewVisible(true);
+  const clearSide = (side) => {
+    if (side === 'front') { setFrontLocal(null); setFrontFile(null); }
+    else { setBackLocal(null); setBackFile(null); }
   };
 
-  const totalPrice = BASE_PRICE * quantity;
-  const canCheckout = Boolean(frontFile && backFile);
+  const canCheckout = Boolean((frontFile || frontLocal) && (backFile || backLocal));
 
   const handleAddToCart = () => {
     if (!canCheckout) {
@@ -135,114 +124,74 @@ export default function PvcCardScreen() {
     addToCart({
       id: `pvc-card-${Date.now()}`,
       type: 'mart',
-      name: `${cardType} PVC Card`,
-      price: totalPrice,
+      name: service.label,
+      price: service.price,
       quantity: 1,
-      image: frontFile.thumbnailLink || frontFile.viewLink || null,
-      fileUrl: frontFile.viewLink || null,
+      image: frontFile?.thumbnailLink || frontFile?.viewLink || frontLocal || null,
+      fileUrl: frontFile?.viewLink || null,
       options: {
-        service: 'PVC Card',
-        cardType,
-        finish,
-        quantity,
-        frontFile: frontFile.name,
-        backFile: backFile.name,
+        service: service.label,
+        frontFile: frontFile?.name || 'front.jpg',
+        backFile: backFile?.name || 'back.jpg',
       },
       attachments: [
-        frontFile.viewLink || frontFile.thumbnailLink || null,
-        backFile.viewLink || backFile.thumbnailLink || null,
+        frontFile?.viewLink || frontFile?.thumbnailLink,
+        backFile?.viewLink || backFile?.thumbnailLink,
       ].filter(Boolean),
     });
     Toast.show({ type: 'success', text1: 'PVC card added to cart!' });
     router.push(href.checkout);
   };
 
-  const renderUploadCard = (label, file, side) => (
-    <View style={styles.uploadCard}>
-      <Text style={styles.uploadLabel}>{label}</Text>
-      {file ? (
-        <View style={styles.uploadedRow}>
-          {file.thumbnailLink || file.viewLink ? (
-            <Image source={{ uri: file.thumbnailLink || file.viewLink }} style={styles.thumb} />
-          ) : (
-            <View style={styles.thumbFallback}>
-              <FileTypeIcon fileName={file.name} size={20} />
-            </View>
-          )}
-          <View style={{ flex: 1 }}>
-            <Text style={styles.fileName} numberOfLines={1}>
-              {file.name}
-            </Text>
-            <View style={styles.uploadActions}>
-              <TouchableOpacity onPress={() => openPreview(file)}>
-                <Text style={styles.linkBtn}>Preview</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => pickFromGallery(side)}>
-                <Text style={styles.linkBtn}>Replace</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-          <TouchableOpacity onPress={() => (side === 'front' ? setFrontFile(null) : setBackFile(null))}>
-            <Feather name="x" size={20} color={colors.textMuted} />
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <View style={styles.pickWrap}>
-          {uploadingSide === side ? (
-            <ActivityIndicator color={colors.primary} />
-          ) : (
+  const CardSlot = ({ label, localUri, serverFile, side }) => {
+    const displayUri = serverFile?.thumbnailLink || serverFile?.viewLink || localUri;
+    const isUploading = uploadingSide === side;
+    const isDone = Boolean(displayUri && !isUploading);
+    return (
+      <View style={styles.cardSlot}>
+        <Text style={styles.cardSlotLabel}>{label}</Text>
+        <View style={[styles.cardPreview, isDone && styles.cardPreviewDone]}>
+          {displayUri ? (
             <>
-              <TouchableOpacity style={styles.pickBtn} onPress={() => pickFromGallery(side)}>
-                <Feather name="image" size={14} color={colors.textPrimary} />
-                <Text style={styles.pickBtnText}>Gallery</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.pickBtn} onPress={() => pickFromFiles(side)}>
-                <Feather name="folder" size={14} color={colors.textPrimary} />
-                <Text style={styles.pickBtnText}>Files</Text>
-              </TouchableOpacity>
+              <Image source={{ uri: displayUri }} style={styles.cardImage} resizeMode="cover" />
+              {isUploading ? (
+                <View style={styles.cardOverlay}>
+                  <ActivityIndicator color="#fff" size="large" />
+                </View>
+              ) : (
+                <TouchableOpacity style={styles.cardRemoveBtn} onPress={() => clearSide(side)}>
+                  <Feather name="x" size={14} color="#fff" />
+                </TouchableOpacity>
+              )}
             </>
+          ) : isUploading ? (
+            <View style={styles.cardEmpty}>
+              <ActivityIndicator color={colors.primary} />
+              <Text style={styles.cardEmptyText}>Uploading...</Text>
+            </View>
+          ) : (
+            <View style={styles.cardEmpty}>
+              <Feather name="upload" size={22} color={colors.primary} style={{ marginBottom: 8 }} />
+              <Text style={styles.cardEmptyText}>Upload {label.toLowerCase()}</Text>
+              <View style={styles.pickRow}>
+                <TouchableOpacity style={styles.pickBtn} onPress={() => pickFromGallery(side)}>
+                  <Feather name="image" size={13} color={colors.textPrimary} />
+                  <Text style={styles.pickBtnText}>Gallery</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.pickBtn} onPress={() => pickFromFiles(side)}>
+                  <Feather name="folder" size={13} color={colors.textPrimary} />
+                  <Text style={styles.pickBtnText}>Files</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           )}
         </View>
-      )}
-    </View>
-  );
+      </View>
+    );
+  };
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      <ImageEditModal
-        visible={editorVisible}
-        asset={editorAsset}
-        onCancel={() => {
-          setEditorVisible(false);
-          setEditorAsset(null);
-          setEditingSide(null);
-        }}
-        onDone={async (edited) => {
-          const side = editingSide;
-          setEditorVisible(false);
-          setEditorAsset(null);
-          setEditingSide(null);
-          if (!side) return;
-          await uploadAsset(
-            {
-              uri: edited.uri,
-              name: edited.name || `${side}.jpg`,
-              fileName: edited.name || `${side}.jpg`,
-              mimeType: edited.mimeType || 'image/jpeg',
-            },
-            side
-          );
-        }}
-      />
-      <FilePreviewModal
-        visible={previewVisible}
-        file={previewFile}
-        onClose={() => {
-          setPreviewVisible(false);
-          setPreviewFile(null);
-        }}
-      />
-
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Feather name="arrow-left" size={22} color={colors.textPrimary} />
@@ -252,67 +201,46 @@ export default function PvcCardScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 130 }} showsVerticalScrollIndicator={false}>
-        <View style={styles.hero}>
-          <Feather name="credit-card" size={30} color={colors.primary} />
-          <Text style={styles.heroTitle}>Upload front + back and get PVC card printed</Text>
-          <Text style={styles.heroSub}>Both side image required · clean print · durable finish</Text>
+        <View style={styles.cardsRow}>
+          <CardSlot label="Front Side" localUri={frontLocal} serverFile={frontFile} side="front" />
+          <CardSlot label="Back Side" localUri={backLocal} serverFile={backFile} side="back" />
         </View>
 
-        {renderUploadCard('Front side image', frontFile, 'front')}
-        {renderUploadCard('Back side image', backFile, 'back')}
-
-        <Text style={styles.sectionTitle}>Card Type</Text>
-        <View style={styles.chipsRow}>
-          {CARD_TYPES.map((item) => (
-            <TouchableOpacity
-              key={item}
-              style={[styles.chip, cardType === item && styles.chipOn]}
-              onPress={() => setCardType(item)}
-            >
-              <Text style={styles.chipText}>{item}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <Text style={styles.sectionTitle}>Finish</Text>
-        <View style={styles.chipsRow}>
-          {FINISH_TYPES.map((item) => (
-            <TouchableOpacity
-              key={item}
-              style={[styles.chip, finish === item && styles.chipOn]}
-              onPress={() => setFinish(item)}
-            >
-              <Text style={styles.chipText}>{item}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <View style={styles.qtyRow}>
-          <Text style={styles.sectionTitle}>Quantity</Text>
-          <View style={styles.qtyControls}>
-            <TouchableOpacity style={styles.qtyBtn} onPress={() => setQuantity((q) => Math.max(1, q - 1))}>
-              <Feather name="minus" size={14} color={colors.textPrimary} />
-            </TouchableOpacity>
-            <Text style={styles.qtyValue}>{quantity}</Text>
-            <TouchableOpacity style={styles.qtyBtn} onPress={() => setQuantity((q) => q + 1)}>
-              <Feather name="plus" size={14} color={colors.textPrimary} />
-            </TouchableOpacity>
-          </View>
+        <Text style={styles.sectionTitle}>Select Service</Text>
+        <View style={styles.serviceList}>
+          {SERVICES.map((svc, index) => {
+            const active = selectedService === svc.id;
+            const isLast = index === SERVICES.length - 1;
+            return (
+              <TouchableOpacity
+                key={svc.id}
+                style={[styles.serviceRow, active && styles.serviceRowActive, isLast && styles.serviceRowLast]}
+                onPress={() => setSelectedService(svc.id)}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.radio, active && styles.radioActive]}>
+                  {active && <View style={styles.radioDot} />}
+                </View>
+                <Text style={[styles.serviceLabel, active && styles.serviceLabelActive]}>{svc.label}</Text>
+                <Text style={[styles.servicePrice, active && styles.servicePriceActive]}>₹{svc.price}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </ScrollView>
 
       <View style={[styles.bottom, { paddingBottom: Math.max(insets.bottom, 12) }]}>
         <View>
-          <Text style={styles.bottomSub}>₹{BASE_PRICE} per card</Text>
-          <Text style={styles.bottomPrice}>₹{totalPrice}</Text>
+          <Text style={styles.bottomSub} numberOfLines={1}>{service.label}</Text>
+          <Text style={styles.bottomPrice}>₹{service.price}</Text>
         </View>
         <TouchableOpacity
           style={[styles.cartBtn, !canCheckout && styles.cartBtnDisabled]}
           onPress={handleAddToCart}
           disabled={!canCheckout}
         >
-          <Text style={styles.cartBtnText}>Add to cart</Text>
-          <Feather name="chevron-right" size={16} color="#fff" style={{ marginLeft: 6 }} />
+          <Feather name="shopping-cart" size={16} color="#fff" style={{ marginRight: 8 }} />
+          <Text style={styles.cartBtnText}>Add to Cart</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -327,95 +255,143 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.page,
     paddingVertical: 14,
   },
-  headerTitle: { flex: 1, textAlign: 'center', fontSize: 16, fontWeight: '800', color: colors.textPrimary },
-  hero: {
-    marginHorizontal: spacing.page,
-    padding: 16,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.bgCard,
-    marginBottom: 16,
-    gap: 6,
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.textPrimary,
   },
-  heroTitle: { fontSize: 16, fontWeight: '800', color: colors.textPrimary },
-  heroSub: { fontSize: 12, color: colors.textSecondary },
-  uploadCard: {
-    marginHorizontal: spacing.page,
-    marginBottom: 12,
-    padding: 12,
+  cardsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: spacing.page,
+    marginBottom: 20,
+    marginTop: 8,
+  },
+  cardSlot: { flex: 1 },
+  cardSlotLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textSecondary,
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  cardPreview: {
+    width: '100%',
+    aspectRatio: 1.586,
     borderRadius: radius.sm,
+    overflow: 'hidden',
+    backgroundColor: colors.bgCard,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.bgCard,
   },
-  uploadLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 10 },
-  pickWrap: { flexDirection: 'row', gap: 10 },
+  cardPreviewDone: {
+    borderColor: '#16A34A',
+    borderWidth: 1.5,
+  },
+  cardRemoveBtn: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardImage: { width: '100%', height: '100%' },
+  cardOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  cardEmpty: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 8,
+  },
+  cardEmptyText: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  pickRow: { flexDirection: 'row', gap: 5 },
   pickBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.bgInput,
-    borderRadius: radius.sm,
+    gap: 4,
+    backgroundColor: colors.bgSurface,
+    borderRadius: 7,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
   },
-  pickBtnText: { color: colors.textPrimary, fontSize: 12, fontWeight: '600' },
-  uploadedRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  thumb: { width: 52, height: 52, borderRadius: 8 },
-  thumbFallback: {
-    width: 52,
-    height: 52,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.bgInput,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  fileName: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
-  uploadActions: { flexDirection: 'row', gap: 14, marginTop: 4 },
-  linkBtn: { fontSize: 12, fontWeight: '700', color: colors.primary },
+  pickBtnText: { color: colors.textPrimary, fontSize: 11, fontWeight: '600' },
   sectionTitle: {
     fontSize: 15,
     fontWeight: '800',
     color: colors.textPrimary,
     paddingHorizontal: spacing.page,
-    marginTop: 8,
-    marginBottom: 10,
+    marginBottom: 8,
   },
-  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: spacing.page },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: radius.sm,
+  serviceList: {
+    marginHorizontal: spacing.page,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.bgCard,
+    overflow: 'hidden',
   },
-  chipOn: { borderColor: colors.primary, backgroundColor: colors.primary + '22' },
-  chipText: { fontSize: 12, color: colors.textPrimary, fontWeight: '700' },
-  qtyRow: {
+  serviceRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 8,
-    paddingHorizontal: spacing.page,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    gap: 12,
   },
-  qtyControls: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  qtyBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 8,
-    borderWidth: 1,
+  serviceRowLast: { borderBottomWidth: 0 },
+  serviceRowActive: { backgroundColor: colors.primary + '0E' },
+  radio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
     borderColor: colors.border,
-    backgroundColor: colors.bgCard,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
-  qtyValue: { fontSize: 16, fontWeight: '800', color: colors.textPrimary, minWidth: 24, textAlign: 'center' },
+  radioActive: { borderColor: colors.primary },
+  radioDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.primary,
+  },
+  serviceLabel: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  serviceLabelActive: { color: colors.primary, fontWeight: '700' },
+  servicePrice: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.textSecondary,
+    flexShrink: 0,
+  },
+  servicePriceActive: { color: colors.primary },
   bottom: {
     position: 'absolute',
     left: 0,
@@ -430,17 +406,17 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
-  bottomSub: { fontSize: 12, color: colors.textMuted },
-  bottomPrice: { fontSize: 24, fontWeight: '800', color: colors.accent },
+  bottomSub: { fontSize: 11, color: colors.textMuted, maxWidth: 160 },
+  bottomPrice: { fontSize: 26, fontWeight: '800', color: colors.accent },
   cartBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 13,
     borderRadius: radius.sm,
   },
-  cartBtnDisabled: { opacity: 0.5 },
+  cartBtnDisabled: { opacity: 0.45 },
   cartBtnText: { color: '#fff', fontWeight: '800', fontSize: 14 },
 });

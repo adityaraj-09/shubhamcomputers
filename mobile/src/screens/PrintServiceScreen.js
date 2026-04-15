@@ -52,7 +52,7 @@ export default function PrintServiceScreen() {
         setLoading(false);
       }
     })();
-  }, [id, navigation]);
+  }, [id]);
 
   const calculatePrice = () => {
     if (!service) return 0;

@@ -4,6 +4,7 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
   Image,
   ActivityIndicator,
@@ -13,16 +14,21 @@ import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
-import API, { getApiOrigin } from '../api/client';
+import API from '../api/client';
 import SearchBar from '../components/SearchBar';
 import ServiceGrid from '../components/ServiceGrid';
 import MartSection from '../components/MartSection';
 import LocationPicker from '../components/LocationPicker';
 import { formatPrice } from '../utils/constants';
 import { href } from '../utils/routes';
-import { colors, radius, spacing } from '../theme/colors';
+import { colors, radius, shadows, spacing } from '../theme/colors';
 import BrandMark from '../components/BrandMark';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+
+const IMG_PRINTER = require('../../assets/printer_banner.jpg');
+const IMG_PASSPORT = require('../../assets/photo_print_banner.jpg');
+const IMG_PVC = require('../../assets/PVC_print_banner.jpg');
+const IMG_BULK = require('../../assets/bulkorder_banner.jpg');
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -32,11 +38,8 @@ export default function HomeScreen() {
   const [categories, setCategories] = useState([]);
   const [showLocation, setShowLocation] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [imgErr, setImgErr] = useState({});
-
-  const origin = getApiOrigin();
   const nowHour = new Date().getHours();
-  const isStoreOpen = nowHour >= 9 && nowHour < 20;
+  const isStoreOpen = nowHour >= 7 && nowHour < 22;
 
   useEffect(() => {
     if (!user?.address?.lat) setShowLocation(true);
@@ -82,6 +85,12 @@ export default function HomeScreen() {
               </Text>
             </View>
           </TouchableOpacity>
+          <View style={[styles.storeBadge, isStoreOpen ? styles.storeBadgeOpen : styles.storeBadgeClosed]}>
+            <View style={[styles.storeDot, isStoreOpen ? styles.storeDotOpen : styles.storeDotClosed]} />
+            <Text style={[styles.storeBadgeText, isStoreOpen ? styles.storeBadgeTextOpen : styles.storeBadgeTextClosed]}>
+              {isStoreOpen ? 'Store is Open' : 'Store Closed'}
+            </Text>
+          </View>
           <TouchableOpacity
             style={styles.walletBtn}
             onPress={() => router.push(href.wallet)}
@@ -94,43 +103,33 @@ export default function HomeScreen() {
         <View style={styles.searchPad}>
           <SearchBar />
         </View>
-        <View style={styles.noticeWrap}>
+        {/* <View style={styles.noticeWrap}>
           <View style={[styles.noticeDot, isStoreOpen ? styles.noticeDotOpen : styles.noticeDotClosed]} />
           <Text style={styles.noticeText}>
             Notice: Store is {isStoreOpen ? 'Open' : 'Closed'} now
           </Text>
-          <Text style={styles.noticeTime}>9 AM - 8 PM</Text>
-        </View>
+          <Text style={styles.noticeTime}>7 AM - 10 PM</Text>
+        </View> */}
 
         <TouchableOpacity
-          activeOpacity={0.92}
+          activeOpacity={0.85}
           onPress={() => router.push(href.printStore)}
           style={styles.bannerPrint}
         >
           <LinearGradient
-            colors={['#f4f4f5', '#e8e8eb']}
+            colors={['#8b6bff', '#8b6bff']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.bannerInner}
           >
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, paddingRight: 8 }}>
               <Text style={styles.bannerTitle}>Get it printed</Text>
               <View style={styles.bannerSubRow}>
-                <Feather name="clock" size={14} color={colors.textSecondary} />
+                <Feather name="clock" size={14} color="rgba(255,255,255,0.9)" />
                 <Text style={styles.bannerSub}> Delivered within 30 minutes</Text>
               </View>
             </View>
-            {!imgErr.printer ? (
-              <Image
-                source={{ uri: `${origin}/images/printer.png` }}
-                style={styles.bannerImg}
-                onError={() => setImgErr((s) => ({ ...s, printer: true }))}
-              />
-            ) : (
-              <View style={styles.bannerFallback}>
-                <MaterialCommunityIcons name="printer-outline" size={44} color={colors.primaryLight} />
-              </View>
-            )}
+            <Image source={IMG_PRINTER} style={styles.bannerImg} resizeMode="cover" />
           </LinearGradient>
         </TouchableOpacity>
 
@@ -140,43 +139,33 @@ export default function HomeScreen() {
             onPress={() => router.push(href.passportPhotos)}
             activeOpacity={0.9}
           >
-            <View style={{ flex: 1 }}>
-              <Text style={styles.miniTitle}>Passport Photos</Text>
-              <Text style={styles.miniSub}>Pro quality · ₹40/8 pics</Text>
+            <View style={styles.miniTextWrap}>
+              <Text style={styles.miniTitle}>Print Photos</Text>
+              <Text style={styles.miniSub}>Passport, Postcard · ₹30+</Text>
             </View>
-            {!imgErr.pass ? (
-              <Image
-                source={{ uri: `${origin}/images/passport-photo.png` }}
-                style={styles.miniImg}
-                onError={() => setImgErr((s) => ({ ...s, pass: true }))}
-              />
-            ) : (
-              <View style={styles.miniImgFallback}>
-                <Feather name="image" size={28} color={colors.primaryLight} />
-              </View>
-            )}
+            <Image source={IMG_PASSPORT} style={styles.miniImg} resizeMode="contain" />
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.miniBanner, styles.miniPvc]}
             onPress={() => router.push(href.pvcCard)}
             activeOpacity={0.9}
           >
-            <View style={{ flex: 1 }}>
+            <View style={styles.miniTextWrap}>
               <Text style={styles.miniTitle}>PVC Card Print</Text>
               <Text style={styles.miniSub}>Front + back upload</Text>
             </View>
-            <Feather name="credit-card" size={28} color={colors.primaryLight} />
+            <Image source={IMG_PVC} style={styles.miniImg} resizeMode="contain" />
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.miniBanner, styles.miniDemand]}
             onPress={() => router.push(href.onDemandPrint)}
             activeOpacity={0.9}
           >
-            <View style={{ flex: 1 }}>
-              <Text style={styles.miniTitle}>Bulk / Custom</Text>
-              <Text style={styles.miniSub}>Call or drop a request</Text>
+            <View style={styles.miniTextWrap}>
+              <Text style={[styles.miniTitle, styles.miniTitleDark]}>Bulk / Custom</Text>
+              <Text style={[styles.miniSub, styles.miniSubDark]}>Call or drop a request</Text>
             </View>
-            <Feather name="phone" size={28} color={colors.primaryLight} />
+            <Image source={IMG_BULK} style={styles.miniImg} resizeMode="contain" />
           </TouchableOpacity>
         </View>
 
@@ -190,14 +179,51 @@ export default function HomeScreen() {
         )}
 
         <View style={styles.footer}>
+          {/* Divider */}
+          <View style={styles.footerDivider} />
+
+          {/* Brand row */}
           <View style={styles.footerBrand}>
             <BrandMark size={48} iconSize={24} />
-            <View>
-              <Text style={styles.footerName}>Shubham print&apos;s</Text>
-              <Text style={styles.footerTag}>9350336367</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.footerName}>Shubham Computers</Text>
+              <Text style={styles.footerTagline}>Your trusted print &amp; stationery partner</Text>
             </View>
           </View>
-          <Text style={styles.footerSmall}>garg80912@gmail.com</Text>
+
+          {/* Info rows */}
+          <View style={styles.footerInfoBlock}>
+            <View style={styles.footerInfoRow}>
+              <Feather name="map-pin" size={14} color={colors.primary} style={styles.footerIcon} />
+              <Text style={styles.footerInfoText}>Go Green Opp. Gujjar Dharmsala, near Govt. Girls Sr. Sec. School, Jhajjar, Haryana 124103</Text>
+            </View>
+            <View style={styles.footerInfoRow}>
+              <Feather name="phone" size={14} color={colors.primary} style={styles.footerIcon} />
+              <Text style={styles.footerInfoText}>+91 93503 36367</Text>
+            </View>
+            <View style={styles.footerInfoRow}>
+              <Feather name="mail" size={14} color={colors.primary} style={styles.footerIcon} />
+              <Text style={styles.footerInfoText}>garg80912@gmail.com</Text>
+            </View>
+            <View style={styles.footerInfoRow}>
+              <Feather name="clock" size={14} color={colors.primary} style={styles.footerIcon} />
+              <Text style={styles.footerInfoText}>Mon – Sat &nbsp; 7:00 AM – 10:00 PM</Text>
+            </View>
+          </View>
+
+          {/* Services row */}
+          <View style={styles.footerServicesRow}>
+            {['Print Store', 'Print Photos', 'PVC Cards', 'Stationery Mart'].map((s) => (
+              <View key={s} style={styles.footerChip}>
+                <Text style={styles.footerChipText}>{s}</Text>
+              </View>
+            ))}
+          </View>
+
+          {/* Copyright */}
+          <View style={styles.footerCopyRow}>
+            <Text style={styles.footerCopy}>© {new Date().getFullYear()} Shubham Computers. All rights reserved.</Text>
+          </View>
         </View>
       </ScrollView>
 
@@ -239,10 +265,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.page,
     paddingVertical: 10,
   },
-  locationBtn: { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 12 },
+  locationBtn: { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8 },
   locText: { marginLeft: 8, flex: 1 },
   locLabel: { fontSize: 11, color: colors.textMuted, textTransform: 'uppercase' },
   locAddr: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
+  storeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginHorizontal: 8,
+  },
+  storeBadgeOpen: { backgroundColor: '#F0FFF4', borderColor: '#16A34A' },
+  storeBadgeClosed: { backgroundColor: '#FFF1F1', borderColor: '#DC2626' },
+  storeDot: { width: 7, height: 7, borderRadius: 4 },
+  storeDotOpen: { backgroundColor: '#16A34A' },
+  storeDotClosed: { backgroundColor: '#DC2626' },
+  storeBadgeText: { fontSize: 12, fontWeight: '700' },
+  storeBadgeTextOpen: { color: '#16A34A' },
+  storeBadgeTextClosed: { color: '#DC2626' },
   walletBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -293,20 +337,34 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     overflow: 'hidden',
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.bgCard,
+    ...shadows.card,
   },
   bannerInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 18,
-    minHeight: 120,
+    paddingVertical: 20,
+    paddingLeft: 20,
+    paddingRight: 16,
+    minHeight: 150,
   },
-  bannerTitle: { fontSize: 22, fontWeight: '800', color: colors.textPrimary },
+  bannerTitle: { fontSize: 22, fontWeight: '800', color: colors.textOnPrimary },
   bannerSubRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
-  bannerSub: { fontSize: 14, color: colors.textSecondary },
-  bannerImg: { width: 100, height: 90, resizeMode: 'contain' },
+  bannerSub: { fontSize: 14, color: 'rgba(255,255,255,0.9)' },
+  bannerImg: {
+    width: 140,
+    height: 120,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.bgCard,
+    marginLeft: 10,
+  },
   bannerFallback: {
-    width: 100,
-    height: 90,
+    width: 130,
+    height: 130,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.bgSurface,
@@ -315,47 +373,93 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   miniRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: 'column',
     gap: 10,
     paddingHorizontal: spacing.page,
     marginBottom: 8,
   },
   miniBanner: {
-    width: '48%',
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
+    paddingVertical: 14,
+    paddingLeft: 16,
+    paddingRight: 16,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    minHeight: 100,
+    minHeight: 90,
+    overflow: 'hidden',
+    ...shadows.card,
   },
-  miniPassport: { backgroundColor: '#f2f2f4' },
-  miniDemand: { backgroundColor: '#ececee' },
-  miniPvc: { backgroundColor: '#efeff2' },
-  miniTitle: { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
-  miniSub: { fontSize: 12, color: colors.textSecondary, marginTop: 4 },
-  miniImg: { width: 56, height: 56, resizeMode: 'contain' },
-  miniImgFallback: {
-    width: 56,
-    height: 56,
+  miniTextWrap: {
+    flex: 1,
+    paddingRight: 8,
+  },
+  miniPassport: { backgroundColor: '#5A4D8A' },
+  miniPvc: { backgroundColor: '#9B8FCC' },
+  miniDemand: { backgroundColor: '#FFD24D' },
+  miniTitle: { fontSize: 15, fontWeight: '800', color: colors.textOnPrimary },
+  miniSub: { fontSize: 12, color: 'rgba(255,255,255,0.9)', marginTop: 4 },
+  miniTitleDark: { color: colors.textPrimary },
+  miniSubDark: { color: colors.textSecondary },
+  miniImg: {
+    width: 96,
+    height: 72,
     borderRadius: radius.sm,
-    backgroundColor: colors.bgSurface,
-    alignItems: 'center',
-    justifyContent: 'center',
     borderWidth: 1,
     borderColor: colors.border,
+    backgroundColor: 'rgba(255,255,255,0.85)',
   },
   footer: {
     marginTop: 32,
     paddingHorizontal: spacing.page,
-    paddingBottom: 20,
+    paddingBottom: 28,
+    backgroundColor: colors.bgCard,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
-  footerBrand: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
-  footerName: { fontSize: 16, fontWeight: '800', color: colors.textPrimary },
-  footerTag: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
-  footerSmall: { fontSize: 11, color: colors.textMuted, textAlign: 'center' },
+  footerDivider: {
+    height: 3,
+    width: 40,
+    backgroundColor: colors.primary,
+    borderRadius: 2,
+    marginTop: 20,
+    marginBottom: 18,
+  },
+  footerBrand: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 18,
+  },
+  footerName: { fontSize: 17, fontWeight: '800', color: colors.textPrimary },
+  footerTagline: { fontSize: 12, color: colors.textMuted, marginTop: 3 },
+  footerInfoBlock: { gap: 10, marginBottom: 18 },
+  footerInfoRow: { flexDirection: 'row', alignItems: 'center' },
+  footerIcon: { marginRight: 10 },
+  footerInfoText: { fontSize: 13, color: colors.textSecondary, flex: 1 },
+  footerServicesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 20,
+  },
+  footerChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    backgroundColor: colors.bgSurface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  footerChipText: { fontSize: 11, fontWeight: '600', color: colors.primary },
+  footerCopyRow: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: 14,
+  },
+  footerCopy: { fontSize: 11, color: colors.textMuted, textAlign: 'center' },
   floatingCart: {
     position: 'absolute',
     left: spacing.page,

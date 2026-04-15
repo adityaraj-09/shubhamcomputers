@@ -43,9 +43,11 @@ export default function OnDemandPrintScreen() {
       updateUser({ numOrders: (user?.numOrders || 0) + 1 });
       setSubmitted(true);
     } catch (err) {
+      const msg = err.response?.data?.error || err.message || 'Could not submit. Please call us directly.';
+      console.warn('Inquiry submit error:', err.response?.status, err.response?.data);
       Toast.show({
         type: 'error',
-        text1: err.response?.data?.error || 'Could not submit. Please call us directly.',
+        text1: msg,
       });
     } finally {
       setLoading(false);

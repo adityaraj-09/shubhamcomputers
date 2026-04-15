@@ -107,10 +107,25 @@ export default function OrdersScreen() {
         ) : (
           orders.map((order) => {
             const statusInfo = ORDER_STATUS_MAP[order.status] || {};
+            const isInquiry = order.items.some((i) => i.type === 'inquiry');
+            const inquiryReqs = isInquiry
+              ? order.items.find((i) => i.type === 'inquiry')?.options?.requirements
+              : null;
             return (
-              <View key={order._id} style={styles.card}>
+              <View
+                key={order._id}
+                style={[styles.card, isInquiry && styles.cardInquiry]}
+              >
                 <View style={styles.cardHead}>
-                  <Text style={styles.orderId}>{order.orderId}</Text>
+                  <View style={styles.cardHeadLeft}>
+                    {isInquiry && (
+                      <View style={styles.enquiryTag}>
+                        <Feather name="phone-call" size={10} color={colors.primary} />
+                        <Text style={styles.enquiryTagText}>Bulk / Custom Enquiry</Text>
+                      </View>
+                    )}
+                    <Text style={styles.orderId}>{order.orderId}</Text>
+                  </View>
                   <View style={[styles.badge, { backgroundColor: statusInfo.bg }]}>
                     <Text style={[styles.badgeText, { color: statusInfo.color }]}>
                       {statusInfo.label}
@@ -124,11 +139,19 @@ export default function OrdersScreen() {
                     </Text>
                   ))}
                 </View>
+                {inquiryReqs ? (
+                  <View style={styles.reqBox}>
+                    <Text style={styles.reqLabel}>Your requirements</Text>
+                    <Text style={styles.reqText} numberOfLines={3}>{inquiryReqs}</Text>
+                  </View>
+                ) : null}
                 <View style={styles.cardFoot}>
-                  <Text style={styles.amt}>{formatPrice(order.amount)}</Text>
+                  <Text style={styles.amt}>
+                    {isInquiry ? 'To be quoted' : formatPrice(order.amount)}
+                  </Text>
                   <Text style={styles.date}>{formatDateTime(order.createdAt)}</Text>
                 </View>
-                {order.status === 'confirmed' && (
+                {order.status === 'confirmed' && !isInquiry && (
                   <TouchableOpacity
                     style={styles.cancelBtn}
                     onPress={() => cancelOrder(order._id)}
@@ -194,7 +217,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  cardHeadLeft: { flex: 1, marginRight: 8 },
+  cardInquiry: { borderColor: colors.primary + '55', borderWidth: 1.5 },
+  enquiryTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 4,
+  },
+  enquiryTagText: { fontSize: 11, fontWeight: '700', color: colors.primary },
+  reqBox: {
+    marginTop: 8,
+    backgroundColor: colors.bgSurface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 10,
+  },
+  reqLabel: { fontSize: 10, fontWeight: '800', color: colors.textMuted, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.4 },
+  reqText: { fontSize: 13, color: colors.textPrimary, lineHeight: 18 },
   orderId: { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
   badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   badgeText: { fontSize: 11, fontWeight: '700' },
