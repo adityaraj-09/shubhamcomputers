@@ -113,7 +113,7 @@ export default function HomeScreen() {
 
         <TouchableOpacity
           activeOpacity={0.85}
-          onPress={() => router.push(href.printStore)}
+          onPress={() => router.push('/home/print-store')}
           style={styles.bannerPrint}
         >
           <LinearGradient
@@ -136,7 +136,7 @@ export default function HomeScreen() {
         <View style={styles.miniRow}>
           <TouchableOpacity
             style={[styles.miniBanner, styles.miniPassport]}
-            onPress={() => router.push(href.passportPhotos)}
+            onPress={() => router.push('/home/passport-photos')}
             activeOpacity={0.9}
           >
             <View style={styles.miniTextWrap}>
