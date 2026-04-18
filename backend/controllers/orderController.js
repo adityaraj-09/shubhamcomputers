@@ -12,6 +12,10 @@ exports.createOrder = async (req, res) => {
     const { items, customNote, deliveryAddress } = req.body;
     const user = await User.findById(req.user._id);
 
+    if (!user) {
+      return res.status(401).json({ error: 'User not found. Please log in again.' });
+    }
+
     if (!items || items.length === 0) {
       return res.status(400).json({ error: 'Order must contain at least one item.' });
     }

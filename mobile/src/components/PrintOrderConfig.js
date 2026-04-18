@@ -13,7 +13,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
-import Pdf from 'react-native-pdf';
+import { WebView } from 'react-native-webview';
 import { useAuth } from '../context/AuthContext';
 import API from '../api/client';
 import { colors, radius } from '../theme/colors';
@@ -340,11 +340,9 @@ export default function PrintOrderConfig({ uploadedFiles, onAddMoreFiles, onBack
               </View>
               {!!currentPdfUri ? (
                 <View style={styles.pdfViewerWrap}>
-                  <Pdf
-                    source={{ uri: currentPdfUri, cache: true }}
+                  <WebView
+                    source={{ uri: `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(currentPdfUri)}` }}
                     style={styles.pdfViewer}
-                    trustAllCerts={false}
-                    onLoadComplete={(numberOfPages) => handlePdfLoad(current, numberOfPages)}
                     onError={() => {
                       Toast.show({ type: 'error', text1: 'Could not render PDF preview' });
                     }}

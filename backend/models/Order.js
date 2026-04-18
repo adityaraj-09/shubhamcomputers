@@ -71,8 +71,16 @@ const orderSchema = new mongoose.Schema({
 // Auto-generate order ID before saving
 orderSchema.pre('save', async function(next) {
   if (!this.orderId) {
-    const count = await mongoose.model('Order').countDocuments();
-    this.orderId = `ORD-${String(count + 1).padStart(6, '0')}`;
+    const last = await mongoose.model('Order')
+      .findOne({}, { orderId: 1 })
+      .sort({ createdAt: -1 })
+      .lean();
+    let nextNum = 1;
+    if (last?.orderId) {
+      const match = last.orderId.match(/ORD-(\d+)/);
+      if (match) nextNum = parseInt(match[1], 10) + 1;
+    }
+    this.orderId = `ORD-${String(nextNum).padStart(6, '0')}`;
   }
   next();
 });
