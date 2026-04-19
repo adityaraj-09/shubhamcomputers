@@ -12,7 +12,7 @@ export default function PrintStoreLanding({ onFilesUploaded }) {
           <MaterialCommunityIcons name="printer-outline" size={36} color={colors.primaryLight} />
         </View>
         <Text style={styles.heroTitle}>Print Store</Text>
-        <Text style={styles.heroSub}>Shubham Computers provides Safe & Secure printouts</Text>
+        <Text style={styles.heroSub}>Shubink provides Safe & Secure printouts</Text>
       </View>
 
       <FileUpload onFilesUploaded={onFilesUploaded} />
@@ -40,7 +40,7 @@ export default function PrintStoreLanding({ onFilesUploaded }) {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>How Print Store works</Text>
         <Text style={styles.sectionDesc}>
-          Let Shubham Computers take care of your everyday printing needs
+          Let Shubink take care of your everyday printing needs
         </Text>
         {[
           { title: 'Visit Print Store', sub: 'Open the app and browse print services', icon: 'eye' },

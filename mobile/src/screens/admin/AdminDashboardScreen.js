@@ -84,7 +84,7 @@ export default function AdminDashboardScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.h1}>Admin Dashboard</Text>
-        <Text style={styles.sub}>Shubham Computers</Text>
+        <Text style={styles.sub}>Shubink</Text>
 
         <View style={styles.grid}>
           {statMeta.map((s) => {

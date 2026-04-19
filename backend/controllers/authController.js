@@ -11,6 +11,54 @@ const generateOTP = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
+// @desc    Login or register with name + phone (no OTP)
+// @route   POST /api/auth/login
+exports.loginWithPhone = async (req, res) => {
+  try {
+    const { name, phone } = req.body;
+
+    if (!phone || !/^[6-9]\d{9}$/.test(phone)) {
+      return res.status(400).json({ error: 'Please provide a valid 10-digit Indian phone number.' });
+    }
+    if (!name || name.trim().length < 2) {
+      return res.status(400).json({ error: 'Please provide a valid name (at least 2 characters).' });
+    }
+
+    let user = await User.findOne({ phone });
+    const isNewUser = !user;
+
+    if (!user) {
+      user = new User({ phone, name: name.trim() });
+      await user.save();
+    } else if (!user.name || user.name.trim().length === 0) {
+      user.name = name.trim();
+      await user.save();
+    }
+
+    const token = generateToken(user._id);
+
+    res.json({
+      success: true,
+      token,
+      isNewUser,
+      user: {
+        id: user._id,
+        userId: user.userId,
+        name: user.name,
+        phone: user.phone,
+        role: user.role,
+        address: user.address,
+        walletBalance: user.walletBalance,
+        numOrders: user.numOrders,
+        avatar: user.avatar || ''
+      }
+    });
+  } catch (error) {
+    console.error('Login Error:', error);
+    res.status(500).json({ error: 'Login failed. Please try again.' });
+  }
+};
+
 // @desc    Send OTP to phone number
 // @route   POST /api/auth/send-otp
 exports.sendOTP = async (req, res) => {

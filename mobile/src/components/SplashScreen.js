@@ -12,8 +12,8 @@ export default function SplashScreen() {
     >
       <View style={styles.content}>
         <BrandMark size={88} iconSize={44} containerStyle={styles.logoMark} />
-        <Text style={styles.title}>Shubham Computers</Text>
-        <Text style={styles.subtitle}>Digital solutions and print services</Text>
+        <Text style={styles.title}>Shubink</Text>
+        <Text style={styles.subtitle}>Smart Printing, Auspicious Growth</Text>
 
         <View style={styles.loader}>
           <ActivityIndicator size="large" color={colors.primary} />

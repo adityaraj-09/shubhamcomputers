@@ -186,7 +186,7 @@ export default function HomeScreen() {
           <View style={styles.footerBrand}>
             <BrandMark size={48} iconSize={24} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.footerName}>Shubham Computers</Text>
+              <Text style={styles.footerName}>Shubink</Text>
               <Text style={styles.footerTagline}>Your trusted print &amp; stationery partner</Text>
             </View>
           </View>
@@ -222,7 +222,7 @@ export default function HomeScreen() {
 
           {/* Copyright */}
           <View style={styles.footerCopyRow}>
-            <Text style={styles.footerCopy}>© {new Date().getFullYear()} Shubham Computers. All rights reserved.</Text>
+            <Text style={styles.footerCopy}>© {new Date().getFullYear()} Shubink. All rights reserved.</Text>
           </View>
         </View>
       </ScrollView>
