@@ -54,18 +54,6 @@ export default function PrintStoreScreen() {
     if (combined) setUploadedFiles(combined);
   };
 
-  if (showConfig && uploadedFiles.length > 0) {
-    return (
-      <View style={[styles.root, { paddingTop: insets.top }]}>
-        <PrintOrderConfig
-          uploadedFiles={uploadedFiles}
-          onAddMoreFiles={handleAddMoreFiles}
-          onBack={() => setShowConfig(false)}
-        />
-      </View>
-    );
-  }
-
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <View style={styles.topBar}>
@@ -81,6 +69,18 @@ export default function PrintStoreScreen() {
         showsVerticalScrollIndicator={false}
       >
         <PrintStoreLanding onFilesUploaded={handleFilesUploaded} />
+
+        {showConfig && uploadedFiles.length > 0 && (
+          <View style={styles.inlineConfigWrap}>
+            <PrintOrderConfig
+              embedded
+              uploadedFiles={uploadedFiles}
+              onAddMoreFiles={handleAddMoreFiles}
+              onBack={() => setShowConfig(false)}
+            />
+          </View>
+        )}
+
         {loading ? (
           <ActivityIndicator color={colors.primary} style={{ marginTop: 24 }} />
         ) : (
@@ -122,6 +122,10 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   title: { flex: 1, textAlign: 'center', fontSize: 18, fontWeight: '800', color: colors.textPrimary },
+  inlineConfigWrap: {
+    marginTop: 16,
+    marginBottom: 8,
+  },
   floatingCart: {
     position: 'absolute',
     left: spacing.page,

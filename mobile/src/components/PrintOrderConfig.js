@@ -64,7 +64,7 @@ const toFileMeta = (asset) => ({
   mimeType: asset.mimeType || 'application/octet-stream',
 });
 
-export default function PrintOrderConfig({ uploadedFiles, onAddMoreFiles, onBack }) {
+export default function PrintOrderConfig({ uploadedFiles, onAddMoreFiles, onBack, embedded = false }) {
   const router = useRouter();
   const { addToCart } = useAuth();
   const [current, setCurrent] = useState(0);
@@ -157,12 +157,14 @@ export default function PrintOrderConfig({ uploadedFiles, onAddMoreFiles, onBack
       if (result.canceled) return;
       const first = result.assets?.[0];
       if (!first) return;
-      setEditorAsset({
-        ...toFileMeta(first),
-        width: first.width,
-        height: first.height,
-      });
-      setEditorVisible(true);
+      onAddMoreFiles?.([
+        {
+          uri: first.uri,
+          name: first.fileName || first.name || 'image.jpg',
+          size: first.fileSize || first.size || 0,
+          mimeType: first.mimeType || 'image/jpeg',
+        },
+      ]);
     } catch {
       Toast.show({ type: 'error', text1: 'Could not add gallery images' });
     }
@@ -207,7 +209,7 @@ export default function PrintOrderConfig({ uploadedFiles, onAddMoreFiles, onBack
   };
 
   return (
-    <View style={styles.page}>
+    <View style={[styles.page, embedded && styles.pageEmbedded]}>
       <ImageEditModal
         visible={editorVisible}
         asset={editorAsset}
@@ -252,11 +254,15 @@ export default function PrintOrderConfig({ uploadedFiles, onAddMoreFiles, onBack
             : null
         }
       />
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} hitSlop={12}>
-          <Feather name="arrow-left" size={22} color={colors.textPrimary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Print Setup</Text>
+      <View style={[styles.header, embedded && styles.headerEmbedded]}>
+        {embedded ? (
+          <Text style={styles.headerTitle}>Preview & Print Setup</Text>
+        ) : (
+          <TouchableOpacity onPress={onBack} hitSlop={12}>
+            <Feather name="arrow-left" size={22} color={colors.textPrimary} />
+          </TouchableOpacity>
+        )}
+        {!embedded && <Text style={styles.headerTitle}>Print Setup</Text>}
         <View style={styles.addRow}>
           <TouchableOpacity style={styles.addFiles} onPress={pickMoreFromGallery}>
             <Feather name="image" size={16} color={colors.primary} />
@@ -266,6 +272,12 @@ export default function PrintOrderConfig({ uploadedFiles, onAddMoreFiles, onBack
             <Feather name="folder-plus" size={16} color={colors.primary} />
             <Text style={styles.addFilesText}>Files</Text>
           </TouchableOpacity>
+          {embedded && (
+            <TouchableOpacity style={styles.addFiles} onPress={onBack}>
+              <Feather name="x" size={16} color={colors.primary} />
+              <Text style={styles.addFilesText}>Close</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -300,7 +312,11 @@ export default function PrintOrderConfig({ uploadedFiles, onAddMoreFiles, onBack
         {current + 1}/{uploadedFiles.length}
       </Text>
 
-      <ScrollView style={styles.config} contentContainerStyle={{ paddingBottom: 24 }}>
+      <ScrollView
+        style={[styles.config, embedded && styles.configEmbedded]}
+        nestedScrollEnabled={embedded}
+        contentContainerStyle={{ paddingBottom: 24 }}
+      >
         <Text style={styles.secTitle}>Selected file preview</Text>
         <View style={styles.previewActions}>
           <TouchableOpacity style={styles.previewActionBtn} onPress={() => setPreviewVisible(true)}>
@@ -584,7 +600,7 @@ export default function PrintOrderConfig({ uploadedFiles, onAddMoreFiles, onBack
         )}
       </ScrollView>
 
-      <View style={styles.bottom}>
+      <View style={[styles.bottom, embedded && styles.bottomEmbedded]}>
         <View>
           <Text style={styles.totalPages}>
             Total {totalPages} page{totalPages !== 1 ? 's' : ''}
@@ -648,6 +664,14 @@ export async function uploadMorePrintFiles(uploadedFiles, newFileMetas, setUploa
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.bgDark },
+  pageEmbedded: {
+    flex: 0,
+    backgroundColor: colors.bgCard,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    overflow: 'hidden',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -662,6 +686,9 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     color: colors.textPrimary,
+  },
+  headerEmbedded: {
+    justifyContent: 'space-between',
   },
   addFiles: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   addFilesText: { color: colors.primary, fontWeight: '600', fontSize: 13 },
@@ -689,6 +716,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   config: { flex: 1, paddingHorizontal: 16 },
+  configEmbedded: {
+    flex: 0,
+    maxHeight: 620,
+  },
   previewCard: {
     marginTop: 10,
     borderRadius: radius.sm,
@@ -851,6 +882,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgCard,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+  },
+  bottomEmbedded: {
+    paddingBottom: 16,
   },
   totalPages: { fontSize: 13, color: colors.textSecondary },
   totalPrice: { fontSize: 22, fontWeight: '800', color: colors.accent },

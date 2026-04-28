@@ -89,20 +89,6 @@ export default function FileUpload({ onFilesUploaded }) {
       });
       if (result.canceled) return;
       const assets = result.assets || [];
-      if (
-        assets.length === 1 &&
-        assets[0]?.uri &&
-        (assets[0]?.mimeType || '').startsWith('image/')
-      ) {
-        const first = assets[0];
-        setEditorAsset({
-          ...toFileMeta(first),
-          width: first.width,
-          height: first.height,
-        });
-        setEditorVisible(true);
-        return;
-      }
       appendPickedFiles(assets.map(toFileMeta));
     } catch {
       Toast.show({ type: 'error', text1: 'Could not pick files' });
@@ -124,12 +110,7 @@ export default function FileUpload({ onFilesUploaded }) {
       if (result.canceled) return;
       const first = result.assets?.[0];
       if (!first) return;
-      setEditorAsset({
-        ...toFileMeta(first),
-        width: first.width,
-        height: first.height,
-      });
-      setEditorVisible(true);
+      appendPickedFiles([toFileMeta(first)]);
     } catch {
       Toast.show({ type: 'error', text1: 'Could not pick images' });
     }

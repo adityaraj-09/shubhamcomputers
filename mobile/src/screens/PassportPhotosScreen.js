@@ -394,7 +394,7 @@ export default function PassportPhotosScreen() {
               >
                 <Image
                   source={{ uri: localUri }}
-                  style={styles.previewImg}
+                  style={[styles.previewImg, isBW && styles.previewImgBW]}
                   resizeMode="contain"
                 />
                 <TouchableOpacity style={styles.previewRemoveBtn} onPress={clearFile}>
@@ -894,6 +894,9 @@ const styles = StyleSheet.create({
   previewImg: {
     width: '100%',
     height: '100%',
+  },
+  previewImgBW: {
+    tintColor: '#bcbcbc',
   },
   previewRemoveBtn: {
     position: 'absolute',

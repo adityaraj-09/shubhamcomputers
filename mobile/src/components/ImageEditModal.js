@@ -13,10 +13,12 @@ import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { colors, radius } from '../theme/colors';
 
 export default function ImageEditModal({ visible, asset, onCancel, onDone }) {
+  const insets = useSafeAreaInsets();
   const [workingImage, setWorkingImage] = useState(null);
   const [cropMode, setCropMode] = useState(false);
   const [bw, setBw] = useState(false);
@@ -128,7 +130,7 @@ export default function ImageEditModal({ visible, asset, onCancel, onDone }) {
           />
         ) : null}
 
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: Math.max(insets.top, 12) }]}>
           <TouchableOpacity style={styles.headerBtn} onPress={onCancel} hitSlop={12}>
             <Text style={styles.headerBtnText}>Cancel</Text>
           </TouchableOpacity>
@@ -231,7 +233,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 16,
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,

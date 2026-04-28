@@ -11,7 +11,7 @@ import {
   Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -30,6 +30,7 @@ try {
 export default function WalletScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const params = useLocalSearchParams();
   const { user, updateUser } = useAuth();
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -40,6 +41,17 @@ export default function WalletScreen() {
   useEffect(() => {
     fetchWallet();
   }, []);
+
+  useEffect(() => {
+    const topupParam = Array.isArray(params?.topup) ? params.topup[0] : params?.topup;
+    const amountParam = Array.isArray(params?.amount) ? params.amount[0] : params?.amount;
+    if (topupParam === '1' || topupParam === 'true') {
+      setShowTopup(true);
+      if (amountParam) {
+        setTopupAmount(String(amountParam));
+      }
+    }
+  }, [params]);
 
   const fetchWallet = async () => {
     try {

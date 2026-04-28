@@ -61,10 +61,12 @@ export default function CheckoutScreen() {
       return;
     }
     if ((user?.walletBalance || 0) < cartTotal) {
+      const shortfall = Math.max(0, cartTotal - (user?.walletBalance || 0));
       Toast.show({
         type: 'error',
-        text1: `Insufficient balance. Need ₹${cartTotal - (user?.walletBalance || 0)} more.`,
+        text1: `Insufficient balance. Need ₹${shortfall} more.`,
       });
+      router.push(`${href.wallet}?topup=1&amount=${encodeURIComponent(String(Math.ceil(shortfall)))}`);
       return;
     }
 
