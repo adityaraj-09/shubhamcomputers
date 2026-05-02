@@ -33,12 +33,7 @@ exports.loginWithPhone = async (req, res) => {
       user = new User({ phone, password: hashed, name: name?.trim() || '' });
       await user.save();
     } else if (!user.password) {
-      const hashed = await bcrypt.hash(password, 10);
-      user.password = hashed;
-      if (name && name.trim().length >= 2 && (!user.name || user.name.trim().length === 0)) {
-        user.name = name.trim();
-      }
-      await user.save();
+      return res.status(400).json({ error: 'Account already exists. Please login with your existing password.' });
     } else {
       const valid = await bcrypt.compare(password, user.password);
       if (!valid) {

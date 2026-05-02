@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Image,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -39,8 +40,16 @@ export default function PvcCardScreen() {
   const [frontFile, setFrontFile] = useState(null);
   const [backFile, setBackFile] = useState(null);
   const [uploadingSide, setUploadingSide] = useState(null);
+  const [lostDescription, setLostDescription] = useState('');
 
   const service = SERVICES.find((s) => s.id === selectedService);
+  const isLostService = selectedService.startsWith('lost_');
+
+  useEffect(() => {
+    if (!isLostService) {
+      setLostDescription('');
+    }
+  }, [isLostService]);
 
   const uploadAsset = async (asset, side) => {
     setUploadingSide(side);
@@ -114,11 +123,13 @@ export default function PvcCardScreen() {
     else { setBackLocal(null); setBackFile(null); }
   };
 
-  const canCheckout = Boolean((frontFile || frontLocal) && (backFile || backLocal));
+  const canCheckout = isLostService
+    ? lostDescription.trim().length > 0
+    : Boolean((frontFile || frontLocal) && (backFile || backLocal));
 
   const handleAddToCart = () => {
     if (!canCheckout) {
-      Toast.show({ type: 'error', text1: 'Upload both front and back images' });
+      Toast.show({ type: 'error', text1: isLostService ? 'Please enter details for lost PVC' : 'Upload both front and back images' });
       return;
     }
     addToCart({
@@ -127,17 +138,20 @@ export default function PvcCardScreen() {
       name: service.label,
       price: service.price,
       quantity: 1,
-      image: frontFile?.thumbnailLink || frontFile?.viewLink || frontLocal || null,
-      fileUrl: frontFile?.viewLink || null,
+      image: isLostService ? null : (frontFile?.thumbnailLink || frontFile?.viewLink || frontLocal || null),
+      fileUrl: isLostService ? null : (frontFile?.viewLink || null),
       options: {
         service: service.label,
+        lostDescription: isLostService ? lostDescription.trim() : '',
         frontFile: frontFile?.name || 'front.jpg',
         backFile: backFile?.name || 'back.jpg',
       },
-      attachments: [
-        frontFile?.viewLink || frontFile?.thumbnailLink,
-        backFile?.viewLink || backFile?.thumbnailLink,
-      ].filter(Boolean),
+      attachments: isLostService
+        ? []
+        : [
+            frontFile?.viewLink || frontFile?.thumbnailLink,
+            backFile?.viewLink || backFile?.thumbnailLink,
+          ].filter(Boolean),
     });
     Toast.show({ type: 'success', text1: 'PVC card added to cart!' });
     router.push(href.checkout);
@@ -227,6 +241,22 @@ export default function PvcCardScreen() {
             );
           })}
         </View>
+
+        {isLostService && (
+          <View style={styles.lostBox}>
+            <Text style={styles.lostLabel}>Enter lost card details</Text>
+            <Text style={styles.lostSub}>Example: Name, old card number, DOB, address, ID type</Text>
+            <TextInput
+              style={styles.lostInput}
+              placeholder="Type details to help us reissue your PVC card"
+              placeholderTextColor={colors.textMuted}
+              value={lostDescription}
+              onChangeText={setLostDescription}
+              multiline
+              maxLength={500}
+            />
+          </View>
+        )}
       </ScrollView>
 
       <View style={[styles.bottom, { paddingBottom: Math.max(insets.bottom, 12) }]}>
@@ -349,6 +379,36 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.bgCard,
     overflow: 'hidden',
+  },
+  lostBox: {
+    marginTop: 16,
+    marginHorizontal: spacing.page,
+    padding: 12,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.bgCard,
+  },
+  lostLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: 6,
+  },
+  lostSub: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginBottom: 8,
+  },
+  lostInput: {
+    minHeight: 90,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.bgInput,
+    padding: 10,
+    color: colors.textPrimary,
+    textAlignVertical: 'top',
   },
   serviceRow: {
     flexDirection: 'row',
