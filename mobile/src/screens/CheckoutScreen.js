@@ -36,13 +36,13 @@ export default function CheckoutScreen() {
   const [placing, setPlacing] = useState(false);
   const [showLocation, setShowLocation] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
-  const [deliveryAddr, setDeliveryAddr] = useState(user?.address?.full || '');
+  const [deliveryAddr, setDeliveryAddr] = useState('');
 
   const hasPrintItems = cart.some((i) => i.type === 'print');
   const hasAddress = !!user?.address?.lat;
 
   useEffect(() => {
-    setDeliveryAddr(user?.address?.full || '');
+    setDeliveryAddr('');
   }, [user?.address?.full]);
 
   useEffect(() => {

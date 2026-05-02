@@ -68,8 +68,6 @@ export default function PrintStoreScreen() {
         contentContainerStyle={{ paddingHorizontal: spacing.page, paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
       >
-        <PrintStoreLanding onFilesUploaded={handleFilesUploaded} />
-
         {showConfig && uploadedFiles.length > 0 && (
           <View style={styles.inlineConfigWrap}>
             <PrintOrderConfig
@@ -80,6 +78,8 @@ export default function PrintStoreScreen() {
             />
           </View>
         )}
+
+        <PrintStoreLanding onFilesUploaded={handleFilesUploaded} />
 
         {loading ? (
           <ActivityIndicator color={colors.primary} style={{ marginTop: 24 }} />

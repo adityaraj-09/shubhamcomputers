@@ -13,6 +13,11 @@ const userSchema = new mongoose.Schema({
     unique: true,
     match: [/^[6-9]\d{9}$/, 'Please enter a valid Indian phone number']
   },
+  password: {
+    type: String,
+    minlength: 6,
+    select: false
+  },
   role: {
     type: String,
     enum: ['user', 'admin'],

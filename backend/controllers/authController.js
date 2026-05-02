@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 
 // Generate JWT
@@ -11,28 +12,38 @@ const generateOTP = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-// @desc    Login or register with name + phone (no OTP)
+// @desc    Login or register with phone + password (no OTP)
 // @route   POST /api/auth/login
 exports.loginWithPhone = async (req, res) => {
   try {
-    const { name, phone } = req.body;
+    const { phone, password, name } = req.body;
 
     if (!phone || !/^[6-9]\d{9}$/.test(phone)) {
       return res.status(400).json({ error: 'Please provide a valid 10-digit Indian phone number.' });
     }
-    if (!name || name.trim().length < 2) {
-      return res.status(400).json({ error: 'Please provide a valid name (at least 2 characters).' });
+    if (!password || password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters.' });
     }
 
-    let user = await User.findOne({ phone });
+    let user = await User.findOne({ phone }).select('+password');
     const isNewUser = !user;
 
     if (!user) {
-      user = new User({ phone, name: name.trim() });
+      const hashed = await bcrypt.hash(password, 10);
+      user = new User({ phone, password: hashed, name: name?.trim() || '' });
       await user.save();
-    } else if (!user.name || user.name.trim().length === 0) {
-      user.name = name.trim();
+    } else if (!user.password) {
+      const hashed = await bcrypt.hash(password, 10);
+      user.password = hashed;
+      if (name && name.trim().length >= 2 && (!user.name || user.name.trim().length === 0)) {
+        user.name = name.trim();
+      }
       await user.save();
+    } else {
+      const valid = await bcrypt.compare(password, user.password);
+      if (!valid) {
+        return res.status(401).json({ error: 'Invalid phone number or password.' });
+      }
     }
 
     const token = generateToken(user._id);

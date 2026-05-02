@@ -19,19 +19,19 @@ import BrandMark from '../components/BrandMark';
 
 export default function LoginScreen() {
   const { login } = useAuth();
-  const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const isValid = name.trim().length >= 2 && /^[6-9]\d{9}$/.test(phone);
+  const isValid = /^[6-9]\d{9}$/.test(phone) && password.length >= 6;
 
   const handleLogin = async () => {
     if (!isValid) return;
     setLoading(true);
     try {
       const { data } = await API.post('/auth/login', {
-        name: name.trim(),
         phone,
+        password,
       });
       await login(data.token, data.user);
       Toast.show({
@@ -72,15 +72,7 @@ export default function LoginScreen() {
         <View style={styles.card}>
           <View>
             <Text style={styles.formTitle}>Login / Sign Up</Text>
-            <Text style={styles.info}>Enter your name and phone number to continue.</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your full name"
-              placeholderTextColor={colors.textMuted}
-              value={name}
-              onChangeText={setName}
-              maxLength={100}
-            />
+            <Text style={styles.info}>Enter your phone number and password to continue.</Text>
             <View style={styles.phoneRow}>
               <Text style={styles.prefix}>+91</Text>
               <TextInput
@@ -93,6 +85,14 @@ export default function LoginScreen() {
                 maxLength={10}
               />
             </View>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter password"
+              placeholderTextColor={colors.textMuted}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+            />
             <TouchableOpacity
               onPress={handleLogin}
               disabled={loading || !isValid}
