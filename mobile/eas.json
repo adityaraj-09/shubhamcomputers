@@ -1,0 +1,30 @@
+{
+  "cli": {
+    "version": ">= 18.9.1",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EAS_BUILD_DISABLE_EXPO_DOCTOR": "1"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EAS_BUILD_DISABLE_EXPO_DOCTOR": "1"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EAS_BUILD_DISABLE_EXPO_DOCTOR": "1"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

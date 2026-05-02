@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/db');
+const { razorpayWebhook } = require('./controllers/walletController');
 
 // Connect to MongoDB
 connectDB();
@@ -39,6 +40,9 @@ const otpLimiter = rateLimit({
 });
 app.use('/api/auth/send-otp', otpLimiter);
 
+// Razorpay webhook must receive raw body for signature verification.
+app.post('/api/wallet/topup/webhook', express.raw({ type: 'application/json' }), razorpayWebhook);
+
 // Body parser
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -59,6 +63,7 @@ app.use('/api/print-services', require('./routes/printServices'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/inquiry', require('./routes/inquiry'));
+app.use('/api', require('./routes/payment'));
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -8,7 +8,6 @@ import {
   TextInput,
   Modal,
   ActivityIndicator,
-  Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -17,7 +16,7 @@ import Toast from 'react-native-toast-message';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
 import API from '../api/client';
-import { formatPrice, formatDateTime, MIN_WALLET_TOPUP, MAX_WALLET_TOPUP } from '../utils/constants';
+import { formatPrice, formatDateTime, MIN_WALLET_TOPUP } from '../utils/constants';
 import { colors, radius, spacing } from '../theme/colors';
 
 let RazorpayCheckout = null;
@@ -67,6 +66,7 @@ export default function WalletScreen() {
 
   const handleTopup = async () => {
     const amount = parseInt(topupAmount, 10);
+    let initiatedTxId = null;
     if (!amount || amount < MIN_WALLET_TOPUP) {
       Toast.show({
         type: 'error',
@@ -74,10 +74,11 @@ export default function WalletScreen() {
       });
       return;
     }
-    if (amount > MAX_WALLET_TOPUP) {
+
+    if (!RazorpayCheckout) {
       Toast.show({
         type: 'error',
-        text1: `Maximum top-up is ${formatPrice(MAX_WALLET_TOPUP)}`,
+        text1: 'Razorpay SDK unavailable in Expo Go. Use a development/production build.',
       });
       return;
     }
@@ -85,6 +86,7 @@ export default function WalletScreen() {
     setTopupLoading(true);
     try {
       const { data } = await API.post('/wallet/topup', { amount });
+      initiatedTxId = data.transactionId;
 
       let confirmPayload = { transactionId: data.transactionId };
 
@@ -110,23 +112,6 @@ export default function WalletScreen() {
           razorpay_payment_id: paymentResult.razorpay_payment_id,
           razorpay_signature: paymentResult.razorpay_signature,
         };
-      } else {
-        const link =
-          data.intents?.gpay ||
-          data.intents?.generic ||
-          data.upiLink;
-
-        if (!link) {
-          throw new Error('No payment method available.');
-        }
-
-        const supported = await Linking.canOpenURL(link);
-        if (!supported) {
-          throw new Error('No UPI app found on this device.');
-        }
-
-        await Linking.openURL(link);
-        await new Promise((resolve) => setTimeout(resolve, 1500));
       }
 
       const confirmRes = await API.post('/wallet/topup/confirm', confirmPayload);
@@ -144,8 +129,22 @@ export default function WalletScreen() {
         error?.code === 0 ||
         /cancelled|dismissed|closed/i.test(String(error?.description || error?.message || ''));
       if (cancelled) {
+        if (initiatedTxId) {
+          try {
+            await API.post('/wallet/topup/cancel', { transactionId: initiatedTxId });
+          } catch {
+            // Keep UI resilient even if cancel API fails.
+          }
+        }
         Toast.show({ type: 'info', text1: 'Payment cancelled' });
       } else {
+        if (initiatedTxId) {
+          try {
+            await API.post('/wallet/topup/cancel', { transactionId: initiatedTxId });
+          } catch {
+            // Keep UI resilient even if cancel API fails.
+          }
+        }
         Toast.show({
           type: 'error',
           text1: error.response?.data?.error || error?.description || 'Top-up failed',

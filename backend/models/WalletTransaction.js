@@ -43,6 +43,9 @@ const walletTransactionSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'completed', 'failed'],
     default: 'completed'
+  },
+  pendingExpiresAt: {
+    type: Date
   }
 }, {
   timestamps: true
@@ -50,5 +53,6 @@ const walletTransactionSchema = new mongoose.Schema({
 
 walletTransactionSchema.index({ user: 1, createdAt: -1 });
 walletTransactionSchema.index({ status: 1 });
+walletTransactionSchema.index({ razorpayPaymentId: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model('WalletTransaction', walletTransactionSchema);

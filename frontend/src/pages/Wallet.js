@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import API from '../api/axios';
-import { formatPrice, formatDateTime, MIN_WALLET_TOPUP, MAX_WALLET_TOPUP } from '../utils/constants';
+import { formatPrice, formatDateTime, MIN_WALLET_TOPUP } from '../utils/constants';
 import './Wallet.css';
 
 const Wallet = () => {
@@ -15,6 +15,14 @@ const Wallet = () => {
   const [showTopup, setShowTopup] = useState(false);
   const [topupAmount, setTopupAmount] = useState('');
   const [topupLoading, setTopupLoading] = useState(false);
+
+  const getRazorpay = () => {
+    if (!window.Razorpay) {
+      toast.error('Razorpay SDK failed to load. Refresh and try again.');
+      return null;
+    }
+    return window.Razorpay;
+  };
 
   useEffect(() => {
     fetchWallet();
@@ -33,42 +41,71 @@ const Wallet = () => {
   };
 
   const handleTopup = async () => {
-    const amount = parseInt(topupAmount);
+    const amount = parseInt(topupAmount, 10);
     if (!amount || amount < MIN_WALLET_TOPUP) {
       toast.error(`Minimum top-up is ${formatPrice(MIN_WALLET_TOPUP)}`);
       return;
     }
-    if (amount > MAX_WALLET_TOPUP) {
-      toast.error(`Maximum top-up is ${formatPrice(MAX_WALLET_TOPUP)}`);
-      return;
-    }
+
+    const RazorpayCheckout = getRazorpay();
+    if (!RazorpayCheckout) return;
 
     setTopupLoading(true);
     try {
-      const { data } = await API.post('/wallet/topup', { amount });
-      
-      // Open UPI intent
-      if (data.upiLink) {
-        window.location.href = data.upiLink;
-      }
+      const { data } = await API.post('/create-order', {
+        amount: Math.round(amount * 100), // paise
+        currency: 'INR',
+        receipt: `wallet_${Date.now()}`,
+      });
 
-      // For demo: auto-confirm after 2 seconds
-      setTimeout(async () => {
-        try {
-          const confirmRes = await API.post('/wallet/topup/confirm', {
-            transactionId: data.transactionId,
-            upiTransactionId: `UPI-${Date.now()}`
-          });
-          updateUser({ walletBalance: confirmRes.data.balance });
-          toast.success(`${formatPrice(amount)} added to wallet!`);
-          setShowTopup(false);
-          setTopupAmount('');
-          fetchWallet();
-        } catch (err) {
-          toast.error('Payment confirmation failed');
-        }
+      const options = {
+        key: process.env.REACT_APP_RAZORPAY_KEY_ID || data.key_id,
+        amount: data.amount,
+        currency: data.currency,
+        name: 'Shubink',
+        description: `Wallet Top-up ${formatPrice(amount)}`,
+        order_id: data.order_id,
+        prefill: {
+          name: user?.name || '',
+          contact: user?.phone || '',
+        },
+        theme: {
+          color: '#1f2937',
+        },
+        handler: async function (response) {
+          try {
+            const verifyRes = await API.post('/verify-payment', {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+
+            updateUser({ walletBalance: verifyRes.data.balance });
+            toast.success(`${formatPrice(amount)} added to wallet!`);
+            setShowTopup(false);
+            setTopupAmount('');
+            fetchWallet();
+          } catch (verifyError) {
+            toast.error(verifyError.response?.data?.error || 'Payment verification failed');
+          } finally {
+            setTopupLoading(false);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setTopupLoading(false);
+            toast('Payment cancelled');
+          },
+        },
+      };
+
+      const rzp = new RazorpayCheckout(options);
+      rzp.on('payment.failed', function (response) {
         setTopupLoading(false);
-      }, 2000);
+        const reason = response?.error?.description || 'Payment failed';
+        toast.error(reason);
+      });
+      rzp.open();
     } catch (error) {
       toast.error(error.response?.data?.error || 'Top-up failed');
       setTopupLoading(false);
@@ -145,7 +182,6 @@ const Wallet = () => {
                   value={topupAmount}
                   onChange={(e) => setTopupAmount(e.target.value)}
                   min={MIN_WALLET_TOPUP}
-                  max={MAX_WALLET_TOPUP}
                   autoFocus
                 />
               </div>
@@ -168,7 +204,7 @@ const Wallet = () => {
               onClick={handleTopup}
               disabled={topupLoading || !topupAmount || parseInt(topupAmount) < MIN_WALLET_TOPUP}
             >
-              {topupLoading ? 'Processing...' : `Pay ${topupAmount ? formatPrice(topupAmount) : ''} via UPI`}
+              {topupLoading ? 'Processing...' : `Pay ${topupAmount ? formatPrice(topupAmount) : ''}`}
             </button>
           </div>
         </div>
