@@ -12,6 +12,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
+import RNBlobUtil from 'react-native-blob-util';
 import { useAuth } from '../context/AuthContext';
 import API from '../api/client';
 import { colors, radius } from '../theme/colors';
@@ -47,6 +48,54 @@ export default function LoginScreen() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadCredentials = async () => {
+    if (!isValid) {
+      Toast.show({
+        type: 'error',
+        text1: 'Enter a valid phone number and password first.',
+      });
+      return;
+    }
+
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const fileName = `shubink-credentials-${stamp}.txt`;
+    const dir = Platform.OS === 'android'
+      ? RNBlobUtil.fs.dirs.DownloadDir
+      : RNBlobUtil.fs.dirs.DocumentDir;
+    const path = `${dir}/${fileName}`;
+    const content = [
+      'Shubink App Credentials',
+      `Phone: +91 ${phone}`,
+      `Password: ${password}`,
+      `Saved: ${new Date().toLocaleString()}`,
+      '',
+      'Keep this file private.',
+    ].join('\n');
+
+    try {
+      await RNBlobUtil.fs.writeFile(path, content, 'utf8');
+      if (Platform.OS === 'android' && RNBlobUtil.android?.addCompleteDownload) {
+        RNBlobUtil.android.addCompleteDownload({
+          title: 'Shubink credentials',
+          description: 'Saved login credentials',
+          mime: 'text/plain',
+          path,
+          showNotification: true,
+        });
+      }
+      Toast.show({
+        type: 'success',
+        text1: 'Credentials file saved.',
+        text2: Platform.OS === 'android' ? 'Check your Downloads folder.' : 'Saved to Files app.',
+      });
+    } catch (err) {
+      Toast.show({
+        type: 'error',
+        text1: 'Could not save credentials file.',
+      });
     }
   };
 
@@ -93,6 +142,15 @@ export default function LoginScreen() {
               onChangeText={setPassword}
               secureTextEntry
             />
+            <TouchableOpacity
+              onPress={handleDownloadCredentials}
+              style={styles.linkBtn}
+            >
+              <View style={styles.linkRow}>
+                <Feather name="download" size={14} color={colors.primaryLight} />
+                <Text style={styles.linkText}>Download credentials file</Text>
+              </View>
+            </TouchableOpacity>
             <TouchableOpacity
               onPress={handleLogin}
               disabled={loading || !isValid}
