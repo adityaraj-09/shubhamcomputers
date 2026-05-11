@@ -22,8 +22,8 @@
       }
     },
     "android": {
-      "package": "com.shubhamcomputers.app",
-      "versionCode": 1,
+      "package": "com.yourcompany.shubink",
+      "versionCode": 6,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#f7f7f8"

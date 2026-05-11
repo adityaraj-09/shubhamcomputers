@@ -1,4 +1,4 @@
-package com.shubhamcomputers.app
+package com.yourcompany.shubink
 
 import android.app.Application
 import android.content.res.Configuration
