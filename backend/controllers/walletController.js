@@ -51,7 +51,7 @@ function verifyRazorpaySignature(orderId, paymentId, signature) {
 exports.getWallet = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select('walletBalance');
-    const transactions = await WalletTransaction.find({ user: req.user._id })
+    const transactions = await WalletTransaction.find({ user: req.user._id, status: 'completed' })
       .sort({ createdAt: -1 })
       .limit(20);
 
@@ -330,6 +330,11 @@ exports.getTransactions = async (req, res) => {
     let filter = { user: req.user._id };
     if (req.query.type) {
       filter.type = req.query.type;
+    }
+    if (req.query.status) {
+      filter.status = req.query.status;
+    } else {
+      filter.status = 'completed';
     }
 
     const transactions = await WalletTransaction.find(filter)

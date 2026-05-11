@@ -26,7 +26,6 @@ const SERVICES = [
   { id: 'lost_rc',   label: 'Lost RC PVC Card Charges',      price: 200 },
   { id: 'lost_pan',  label: 'Lost PAN Card PVC Charges',     price: 200 },
   { id: 'lost_vote', label: 'Lost Vote Card PVC Charges',    price: 200 },
-  { id: 'lost_aadh', label: 'Lost Aadhaar PVC Card Charges', price: 100 },
 ];
 
 export default function PvcCardScreen() {
